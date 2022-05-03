@@ -1,3 +1,9 @@
+@use 'sass:map';
+
+//
+// UNITS
+//
+
 $unit-pixel: (
     "prefix": "px",
     "values": (0 1 2 4 8 16 32 64),
@@ -12,3 +18,18 @@ $unit-character: (
     "prefix": "ch",
     "values": (30ch 50ch 70ch 90ch 120ch),
 ) !default;
+
+//
+// Fonts
+//
+
+// Baseline info: https://www.smashingmagazine.com/2012/12/css-baseline-the-good-the-bad-and-the-ugly/
+$font-default: (
+    "family": Georgia,
+    "line-height": 20px,
+) !default;
+
+
+
+$baseline: map.get($font-default, "line-height") !default;
+

@@ -48,6 +48,10 @@
         apps.examples = examples-app;
         apps.default = examples-app;
         defaultApp = examples-app;
+          
+        devShell = pkgs.mkShell {
+          buildInputs = [ pkgs.nodePackages.sass ];
+        };
       }
     );
 }

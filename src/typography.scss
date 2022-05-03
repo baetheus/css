@@ -1,0 +1,19 @@
+@use 'sass:map';
+
+@import "./names";
+
+body {
+  font-family: map.get($font-default, "family");
+  line-height: map.get($font-default, "line-height");
+}
+
+main {
+  margin: $baseline;
+  padding: $baseline;
+}
+
+p, h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  padding: 0;
+  max-width: 70ch;
+}
