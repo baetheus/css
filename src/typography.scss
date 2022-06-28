@@ -1,19 +1,83 @@
 @use 'sass:map';
 
-@import "./names";
+@import './names.scss';
+
+.redorange {
+  --h: 8;
+  --s: 100%;
+  --l: 59%;
+  color: hsl(var(--h), var(--s), var(--l));
+}
+
+.lighter {
+  --l: calc(var(--l) + 10%);
+}
 
 body {
   font-family: map.get($font-default, "family");
-  line-height: map.get($font-default, "line-height");
+  font-size: $font-size;
+  line-height: $baseline;
+  padding: 0;
+  margin: 0;
 }
 
 main {
-  margin: $baseline;
+  margin: 0;
   padding: $baseline;
 }
 
 p, h1, h2, h3, h4, h5, h6 {
   margin: 0;
   padding: 0;
-  max-width: 70ch;
+  max-width: 50rem;
 }
+
+p {
+  text-align: justify;
+  font-size: 1em;
+  line-height: $baseline;
+  margin-bottom: $baseline;
+}
+
+h6 {
+  font-size: 1em;
+  font-weight: bold;
+  line-height: $baseline;
+  margin-bottom: $baseline;
+}
+
+h5 {
+  font-size: 1.1487em;
+  font-weight: bold;
+  line-height: $baseline;
+  margin-bottom: $baseline;
+}
+
+h4 {
+  font-size: 1.3195em;
+  font-weight: bold;
+  line-height: 2 * $baseline;
+  margin-bottom: $baseline;
+}
+
+h3 {
+  font-size: 1.5157em;
+  font-weight: bold;
+  line-height: 2 * $baseline;
+  margin-bottom: $baseline;
+}
+
+h2 {
+  font-size: 1.7511em;
+  font-weight: bold;
+  line-height: 2 * $baseline;
+  margin-bottom: $baseline;
+}
+
+h1 {
+  font-size: 2em;
+  font-weight: bold;
+  line-height: 2 * $baseline;
+  margin-bottom: $baseline;
+}
+
