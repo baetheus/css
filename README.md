@@ -15,3 +15,55 @@ This is a standalone css library--no required js, no dependencies, no footguns. 
 
 It's not done yet so don't use it!
 
+## TODO When this list is done we'll have an actual release
+
+- Sass Variables
+  - Units: pixel, percentage, character, view height, view width
+  - Breakpoints
+    - Default: intended for mobile view, thus prefer vertical designs
+    - Min-Width: breakpoints are for x width and up
+  - Color Themes
+    - Requires name, background, color, and border
+    - Optionally includes a map of pseudo-selectors with overrides
+    - Optionally includes a map of variants with name and overrides
+- Utility Classes
+  - color: cX
+  - font: fX
+  - text: tX
+  - border: bX
+  - padding: p
+  - margin: mX
+  - width: wX
+  - height: hX
+  - display: dX
+  - flex: flX
+  - cursor: csrX
+  - object: objX
+  - overflow: ovrX
+- Modules: tag based, uses utility classes, pure css
+  - Typography: standard text structure tags
+    - h1, h2, h3, h4, h5, h6, p, a
+  - Layout: full page layouts
+    - Vertical: flex column, full width, stretch children, children max width
+  - Forms
+    - Button: submit, reset, button
+    - Textarea
+    - Select
+    - Input
+      - Password
+      - Checkbox
+      - Radio
+      - Email
+      - Search
+      - Tel
+      - URL
+      - Number
+      - Range
+      - Datetime: month, week, time, date
+      - Color
+      - File
+  - Lists
+    - Ordered
+    - Unordered
+  - Menu
+

@@ -11,6 +11,7 @@
 
 .lighter {
   --l: calc(var(--l) + 10%);
+  color: hsl(var(--h), var(--s), var(--l));
 }
 
 body {
