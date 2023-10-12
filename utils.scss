@@ -1,0 +1,50 @@
+@use "sass:map";
+
+@function make-vars($in) {
+  $prefix: map.get($in, "prefix");
+  $values: map.get($in, "values");
+
+  $result: ();
+
+  @each $key, $value in $values {
+    $var: --#{$prefix}-#{$key};
+    $result: map.set($result, $key, (
+      "value": $value,
+      "var": $var,
+    ));
+  }
+
+  @return $result;
+}
+
+@mixin print-values($in) {
+  $prefix: map.get($in, "prefix");
+  $property: map.get($in, "property");
+  $vars: make-vars($in);
+
+  :root {
+    @each $key, $value in $vars {
+      #{map.get($value, "var")}: #{map.get($value, "value")};
+    }
+  }
+
+  @each $key, $value in $vars {
+    .#{$prefix}-#{$key} {
+      #{$property}: var(map.get($value, "var"));
+    }
+  }
+}
+
+@mixin print-simple-classes($in) {
+  $prefix: map.get($in, "prefix");
+  $property: map.get($in, "property");
+  $values: map.get($in, "values");
+
+  $vars: make-vars($in);
+
+  @each $key, $value in $values {
+    .#{$prefix}-#{$key} {
+      #{$property}: #{$value};
+    }
+  }
+}

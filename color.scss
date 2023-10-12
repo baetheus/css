@@ -1,0 +1,103 @@
+@use "sass:map";
+
+// -----
+// Names
+// -----
+
+$prefix-color-theme: "ct" !default;
+$prefix-color-foreground: "cf" !default;
+$prefix-color-background: "cb" !default;
+$prefix-color-edge: "ce" !default;
+
+$var-theme-foreground: "--#{$prefix-color-foreground}";
+$var-theme-background: "--#{$prefix-color-background}";
+$var-theme-edge: "--#{$prefix-color-edge}";
+
+// ------------
+// Color Themes
+// ------------
+
+$theme-default: (
+  "name": "default",
+  "background": #0D1117,
+  "foreground": #C9D1D9,
+  "edge": #C9D1D9,
+  "psuedo-selectors": (),
+) !default;
+
+$theme-link: (
+  "name": "link",
+  "background": #0D1117,
+  "foreground": #C9D1D9,
+  "edge": #C9D1D9,
+  "psuedo-selectors": ("hover"),
+) !default;
+
+$themes: (
+  $theme-default,
+  $theme-link,
+) !default;
+
+// -----------------
+// Custom Properties
+// -----------------
+
+:root {
+  @each $theme in $themes {
+    $name: map.get($theme, "name");
+
+    $foreground: map.get($theme, "foreground");
+    $background: map.get($theme, "background");
+    $edge: map.get($theme, "edge");
+
+    #{$var-theme-foreground}-#{$name}: #{$foreground};
+    #{$var-theme-background}-#{$name}: #{$background};
+    #{$var-theme-edge}-#{$name}: #{$edge};
+  }
+}
+
+// -------------
+// Theme Classes
+// -------------
+
+$emptyMap: ();
+
+@each $theme in $themes {
+  $name: map.get($theme, "name");
+  $psuedo-selectors: map.get($theme, "psuedo-selectors");
+
+  $prop-foreground: var(#{$var-theme-foreground}-#{$name});
+  $prop-background: var(#{$var-theme-background}-#{$name});
+  $prop-edge: var(#{$var-theme-edge}-#{$name});
+
+  /* Color theme classes for the `#{$name}` theme. */
+
+  .#{$prefix-color-foreground}-#{$name}, .#{$prefix-color-theme}-#{$name} {
+    color: $prop-foreground;
+  }
+
+  .#{$prefix-color-background}-#{$name}, .#{$prefix-color-theme}-#{$name} {
+    background: $prop-background;
+  }
+
+  .#{$prefix-color-edge}-#{$name}, .#{$prefix-color-theme}-#{$name} {
+    border: $prop-edge;
+  }
+
+  @each $psuedo in $psuedo-selectors {
+    .#{$prefix-color-foreground}-#{$name}-#{$psuedo}:#{$psuedo},
+    .#{$prefix-color-theme}-#{$name}-#{$psuedo}:#{$psuedo} {
+      @extend .#{$prefix-color-foreground}-#{$name};
+    }
+
+    .#{$prefix-color-background}-#{$name}-#{$psuedo}:#{$psuedo},
+    .#{$prefix-color-theme}-#{$name}-#{$psuedo}:#{$psuedo} {
+      @extend .#{$prefix-color-background}-#{$name};
+    }
+
+    .#{$prefix-color-edge}-#{$name}-#{$psuedo}:#{$psuedo},
+    .#{$prefix-color-theme}-#{$name}-#{$psuedo}:#{$psuedo} {
+      @extend .#{$prefix-color-edge}-#{$name};
+    }
+  }
+}

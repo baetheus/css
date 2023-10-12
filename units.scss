@@ -1,0 +1,38 @@
+// -----
+// UNITS
+// -----
+
+$unit-pixel: (
+  "prefix": "px",
+  "values": (0 1 2 4 8 16 32 64),
+) !default;
+
+$unit-percentage: (
+  "prefix": "pr",
+  "values": (10% 20% 25% 30% 40% 50% 60% 70% 75% 80% 90% 100%),
+) !default;
+
+$unit-character: (
+  "prefix": "ch",
+  "values": (30ch 50ch 70ch 90ch 120ch),
+) !default;
+
+$unit-viewheight: (
+  "prefix": "vh",
+  "values": (25vh 40vh 50vh 60vh 75vh 80vh 100vh),
+) !default;
+
+$unit-viewwidth: (
+  "prefix": "vw",
+  "values": (25vw 40vw 50vw 60vw 75vw 80vw 100vw),
+) !default;
+
+$unit-em: (
+  "prefix": "em",
+  "values": (50em 75em 90em),
+) !default;
+
+$unit-rem: (
+  "prefix": "rem",
+  "values": (50rem 75rem 90rem),
+) !default;

@@ -1,0 +1,15 @@
+// ----
+// TEXT
+// ----
+
+$text-align-property: (
+  "type": "values",
+  "property": "text-align",
+  "prefix": "ta",
+  "values": (
+    "l": "left",
+    "r": "right",
+    "c": "center",
+    "j": "justify",
+  )
+) !default;

@@ -1,0 +1,69 @@
+@use "./utils.scss" as utils;
+
+// -----
+// Names
+// -----
+
+$prefix-font-family: "ff" !default;
+$prefix-font-size: "fs" !default;
+$prefix-font-weight: "fw" !default;
+
+// ------------
+// Font Families
+// ------------
+
+$font-georgia: (
+    "family": Georgia,
+    "font-size": 16px,
+    "line-height": 22px,
+) !default;
+
+$font-default: $font-georgia !default;
+
+$font-families: (
+  $font-default,
+) !default;
+
+// ----------
+// Font Sizes
+// ----------
+
+$font-size-property: (
+  "prefix": #{$prefix-font-size},
+  "property": "font-size",
+  "values": (
+    'u5': 2em,
+    'u4': 1.7511em,
+    'u3': 1.5157em,
+    'u2': 1.3195em,
+    'u1': 1.1487em,
+    '0': 1em,
+    'd1': 0.8706em,
+    'd2': 0.7579em,
+    'd3': 0.6599em,
+    'd4': 0.5745em,
+    'd5': 0.5em,
+  ),
+) !default;
+
+@include utils.print-values($font-size-property);
+
+// ------------
+// Font Weights
+// ------------
+
+$font-weight-property: (
+  "prefix": #{$prefix-font-weight},
+  "property": "font-weight",
+  "values": (
+    'u3': 700,
+    'u2': 600,
+    'u1': 500,
+    '0': 400,
+    'd1': 300,
+    'd2': 200,
+    'd3': 100,
+  ),
+) !default;
+
+@include utils.print-values($font-weight-property);

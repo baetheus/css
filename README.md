@@ -1,6 +1,7 @@
 # CSS
 
-This is a standalone css library--no required js, no dependencies, no footguns. I'm just tired of learning how to write easy css in complicated frameworks.
+This is a standalone css library--no required js, no dependencies, no footguns.
+I'm just tired of learning how to write easy css in complicated frameworks.
 
 ## Goals (this project should be...)
 
@@ -18,10 +19,7 @@ It's not done yet so don't use it!
 ## TODO When this list is done we'll have an actual release
 
 - Sass Variables
-  - Units: pixel, percentage, character, view height, view width
-  - Breakpoints
-    - Default: intended for mobile view, thus prefer vertical designs
-    - Min-Width: breakpoints are for x width and up
+  - Units: pixel, percentage, character, view height, view width, em, rem
   - Color Themes
     - Requires name, background, color, and border
     - Optionally includes a map of pseudo-selectors with overrides
@@ -66,4 +64,3 @@ It's not done yet so don't use it!
     - Ordered
     - Unordered
   - Menu
-

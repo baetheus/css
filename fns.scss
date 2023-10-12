@@ -1,0 +1,8 @@
+
+// Return $value if not falsy, otherwise return $otherwise
+@function alt($value, $otherwise) {
+  @if $value {
+    @return value;
+  }
+  @return $otherwise;
+}

@@ -2,8 +2,8 @@
   description = "A CSS library";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
-    flake-utils.url = "github:numtide/flake-utils/master";
+    nixpkgs.url = "github:nixos/nixpkgs/release-23.05";
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs = { self, nixpkgs, flake-utils }:
@@ -16,7 +16,7 @@
           name = "css";
           src = ./src;
           builder = "${dash}/bin/dash";
-          args = ["-c" "${nodePackages.sass}/bin/sass $src:$out"];
+          args = ["-c" "${dart-sass}/bin/sass $src:$out"];
         }; 
 
         examples = with pkgs; derivation {
@@ -50,7 +50,7 @@
         defaultApp = examples-app;
           
         devShell = pkgs.mkShell {
-          buildInputs = [ pkgs.nodePackages.sass ];
+          buildInputs = [ pkgs.dart-sass ];
         };
       }
     );
