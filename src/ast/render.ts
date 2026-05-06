@@ -53,7 +53,10 @@ export function renderValue(value: CssValue): string {
 }
 
 export function renderProperty(property: CssProperty): string {
-  const name = camelToKebab(property.name);
+  // Don't convert CSS custom properties (--varName) to kebab-case
+  const name = property.name.startsWith("--")
+    ? property.name
+    : camelToKebab(property.name);
   const value = renderValue(property.value);
   const important = property.important ? " !important" : "";
   return `${name}: ${value}${important}`;
