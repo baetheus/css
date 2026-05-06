@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/brandon/share/projects/css/**)",
+      "Bash(deno check:*)",
+      "Bash(deno test:*)"
+    ]
+  }
+}
