@@ -1,21 +1,27 @@
 # @baetheus/css
 
-A type-safe CSS-in-JS library for Deno with scoped styles, theming, and a complete CSS AST.
+A type-safe CSS-in-JS library for Deno with scoped styles, theming, and a
+complete CSS AST.
 
 This project was vibe coded with Claude.
 
 ## Description
 
-`@baetheus/css` provides a complete CSS Abstract Syntax Tree and a high-level API for creating scoped styles, CSS variables, keyframe animations, font faces, layers, and recipes (variant-based component styles). All styles are compiled to CSS AST rules that can be rendered to strings.
+`@baetheus/css` provides a complete CSS Abstract Syntax Tree and a high-level
+API for creating scoped styles, CSS variables, keyframe animations, font faces,
+layers, and recipes (variant-based component styles). All styles are compiled to
+CSS AST rules that can be rendered to strings.
 
 ### Features
 
 - Scoped class name generation with content-based hashing
-- Full CSS AST representation for all major at-rules (@media, @supports, @container, @keyframes, @font-face, @layer, @property)
+- Full CSS AST representation for all major at-rules (@media, @supports,
+  @container, @keyframes, @font-face, @layer, @property)
 - CSS variable theming with type-safe contracts
 - Recipe pattern for variant-based component styles
 - Style composition and merging
-- Selector builders (class, id, tag, attribute, pseudo-class, pseudo-element, combinators)
+- Selector builders (class, id, tag, attribute, pseudo-class, pseudo-element,
+  combinators)
 - Zero runtime in production (all CSS is generated at build time)
 
 ## Usage
@@ -29,7 +35,7 @@ deno add jsr:@baetheus/css
 ### Basic Styles
 
 ```ts
-import { style, render } from "@baetheus/css/core";
+import { render, style } from "@baetheus/css/core";
 
 const button = style({
   backgroundColor: "blue",
@@ -51,7 +57,7 @@ const css = render([button]);
 ### CSS Variables / Theming
 
 ```ts
-import { createVars, vars, style, render } from "@baetheus/css/core";
+import { createVars, render, style, vars } from "@baetheus/css/core";
 
 const theme = createVars({
   colors: {
@@ -114,7 +120,7 @@ element.className = button.with({ size: "large", variant: "ghost" });
 ### Keyframes
 
 ```ts
-import { keyframes, style, render } from "@baetheus/css/core";
+import { keyframes, render, style } from "@baetheus/css/core";
 
 const fadeIn = keyframes({
   from: { opacity: 0 },
@@ -129,7 +135,7 @@ const animated = style({
 ### Low-Level AST
 
 ```ts
-import { cls, prop, styleRule, mediaRule, renderRule } from "@baetheus/css/ast";
+import { cls, mediaRule, prop, renderRule, styleRule } from "@baetheus/css/ast";
 
 const rule = styleRule(cls("button"), [
   prop("display", "inline-flex"),
@@ -146,13 +152,17 @@ console.log(renderRule(responsive));
 
 ## Inspirations
 
-- [vanilla-extract](https://vanilla-extract.style/) - The primary inspiration for the API design, particularly the `style`, `recipe`, `createVar`, and theming patterns
+- [vanilla-extract](https://vanilla-extract.style/) - The primary inspiration
+  for the API design, particularly the `style`, `recipe`, `createVar`, and
+  theming patterns
 - [Sass](https://sass-lang.com/) - Influence on nesting and selector composition
-- [fp-ts](https://gcanti.github.io/fp-ts/) - Functional programming patterns and type-safe design
+- [fp-ts](https://gcanti.github.io/fp-ts/) - Functional programming patterns and
+  type-safe design
 
 ## Contributing
 
-Contributions are welcome! This is an experimental project that was vibe coded, so there's plenty of room for improvement.
+Contributions are welcome! This is an experimental project that was vibe coded,
+so there's plenty of room for improvement.
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
