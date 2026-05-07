@@ -39,7 +39,10 @@ Deno.test("tag creates element selector", () => {
 });
 
 Deno.test("attr creates attribute selector", () => {
-  assertEquals(attr('[type="text"]'), { type: "simple", value: '[type="text"]' });
+  assertEquals(attr('[type="text"]'), {
+    type: "simple",
+    value: '[type="text"]',
+  });
 });
 
 Deno.test("universal creates universal selector", () => {
@@ -196,6 +199,7 @@ Deno.test("containerRule without name", () => {
     type: "container",
     query: "(min-width: 300px)",
     rules: [inner],
+    name: undefined,
   });
 });
 

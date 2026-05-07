@@ -21,7 +21,7 @@ Deno.test("compileStyle creates simple StyleRule", () => {
     `.button {
   color: blue;
   padding: 10px;
-}`
+}`,
   );
 });
 
@@ -38,7 +38,7 @@ Deno.test("compileStyle handles CSS variables in vars", () => {
   --primaryColor: #007bff;
   --spacing: 8px;
   color: red;
-}`
+}`,
   );
 });
 
@@ -64,7 +64,7 @@ Deno.test("compileStyle handles nested selectors with &", () => {
 }
 .button:active {
   color: navy;
-}`
+}`,
   );
 });
 
@@ -88,7 +88,7 @@ Deno.test("compileStyle handles complex nested selectors", () => {
 }
 .card:hover .icon {
   opacity: 1;
-}`
+}`,
   );
 });
 
@@ -110,7 +110,7 @@ Deno.test("compileStyle handles media queries", () => {
   .button {
     padding: 16px;
   }
-}`
+}`,
   );
 });
 
@@ -132,7 +132,7 @@ Deno.test("compileStyle handles supports queries", () => {
   .grid {
     display: grid;
   }
-}`
+}`,
   );
 });
 
@@ -154,7 +154,7 @@ Deno.test("compileStyle handles container queries", () => {
   .card {
     padding: 16px;
   }
-}`
+}`,
   );
 });
 
@@ -176,7 +176,7 @@ Deno.test("compileStyle handles layers", () => {
   .button {
     display: flex;
   }
-}`
+}`,
   );
 });
 
@@ -198,7 +198,7 @@ Deno.test("compileStyle handles multiple at-rules", () => {
 Deno.test("mergeStyles merges simple properties (later wins)", () => {
   const result = mergeStyles(
     { color: "red", padding: 10 },
-    { color: "blue", margin: 20 }
+    { color: "blue", margin: 20 },
   );
 
   assertEquals(result.color, "blue");
@@ -209,7 +209,7 @@ Deno.test("mergeStyles merges simple properties (later wins)", () => {
 Deno.test("mergeStyles deep merges vars", () => {
   const result = mergeStyles(
     { vars: { primary: "red", secondary: "green" } },
-    { vars: { primary: "blue" } }
+    { vars: { primary: "blue" } },
   );
 
   assertEquals(result.vars, { primary: "blue", secondary: "green" });
@@ -218,7 +218,7 @@ Deno.test("mergeStyles deep merges vars", () => {
 Deno.test("mergeStyles deep merges selectors", () => {
   const result = mergeStyles(
     { selectors: { "&:hover": { color: "red" } } },
-    { selectors: { "&:active": { color: "blue" } } }
+    { selectors: { "&:active": { color: "blue" } } },
   );
 
   assertEquals(result.selectors, {
@@ -230,7 +230,7 @@ Deno.test("mergeStyles deep merges selectors", () => {
 Deno.test("mergeStyles deep merges @media", () => {
   const result = mergeStyles(
     { "@media": { "(min-width: 768px)": { padding: 16 } } },
-    { "@media": { "(min-width: 1024px)": { padding: 24 } } }
+    { "@media": { "(min-width: 1024px)": { padding: 24 } } },
   );
 
   assertEquals(result["@media"], {
@@ -251,7 +251,7 @@ Deno.test("compileStyle handles array input (composition)", () => {
     `.button {
   color: blue;
   padding: 8px;
-}`
+}`,
   );
 });
 
@@ -269,7 +269,7 @@ Deno.test("compileStyle handles nested arrays", () => {
   color: red;
   padding: 8px;
   margin: 16px;
-}`
+}`,
   );
 });
 
@@ -277,7 +277,7 @@ Deno.test("validateSelector throws for selectors without &", () => {
   assertThrows(
     () => validateSelector(".other"),
     Error,
-    'must reference the element with &'
+    "must reference the element with &",
   );
 });
 
@@ -288,7 +288,7 @@ Deno.test("compileStyle throws for invalid nested selector", () => {
         selectors: { ".invalid": { color: "red" } },
       }),
     Error,
-    'must reference the element with &'
+    "must reference the element with &",
   );
 });
 
@@ -325,6 +325,6 @@ Deno.test("full example from phase-2 spec", () => {
   .button {
     padding: 16px;
   }
-}`
+}`,
   );
 });

@@ -1,4 +1,4 @@
-import type { StyleObject, StyleInput, StyleProperties } from "./types.ts";
+import type { StyleInput, StyleObject, StyleProperties } from "./types.ts";
 import type { CssRule } from "../ast/types.ts";
 import {
   cls,
@@ -37,25 +37,33 @@ export function mergeStyles(...inputs: StyleInput[]): StyleObject {
     Object.assign(result, input);
 
     // Deep merge nested objects
-    if (prevVars || input.vars)
+    if (prevVars || input.vars) {
       result.vars = { ...prevVars, ...input.vars };
-    if (prevSelectors || input.selectors)
+    }
+    if (prevSelectors || input.selectors) {
       result.selectors = { ...prevSelectors, ...input.selectors };
-    if (prevMedia || input["@media"])
+    }
+    if (prevMedia || input["@media"]) {
       result["@media"] = { ...prevMedia, ...input["@media"] };
-    if (prevSupports || input["@supports"])
+    }
+    if (prevSupports || input["@supports"]) {
       result["@supports"] = { ...prevSupports, ...input["@supports"] };
-    if (prevContainer || input["@container"])
+    }
+    if (prevContainer || input["@container"]) {
       result["@container"] = { ...prevContainer, ...input["@container"] };
-    if (prevLayer || input["@layer"])
+    }
+    if (prevLayer || input["@layer"]) {
       result["@layer"] = { ...prevLayer, ...input["@layer"] };
+    }
   }
   return result;
 }
 
 // Compile a style object to CSS rules for a given class name
 export function compileStyle(className: string, input: StyleInput): CssRule[] {
-  const style: StyleObject = Array.isArray(input) ? mergeStyles(...input) : input as StyleObject;
+  const style: StyleObject = Array.isArray(input)
+    ? mergeStyles(...input)
+    : input as StyleObject;
   const rules: CssRule[] = [];
   const selector = cls(className);
 
@@ -76,8 +84,8 @@ export function compileStyle(className: string, input: StyleInput): CssRule[] {
       rules.push(
         styleRule(
           { type: "simple", value: resolvedSelector },
-          transformProperties(props)
-        )
+          transformProperties(props),
+        ),
       );
     }
   }

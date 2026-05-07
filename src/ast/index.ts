@@ -2,9 +2,9 @@ export * from "./types.ts";
 export * from "./builders.ts";
 export {
   renderCss,
+  renderProperty,
   renderRule,
   renderSelector,
-  renderProperty,
   renderValue,
 } from "./render.ts";
 export type { RenderOptions } from "./render.ts";

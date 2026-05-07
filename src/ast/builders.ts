@@ -1,6 +1,6 @@
 import type {
-  CompoundSelector,
   ComplexSelector,
+  CompoundSelector,
   ContainerRule,
   CssFallback,
   CssProperty,
@@ -25,7 +25,7 @@ import type {
 
 export function styleRule(
   selectors: Selector | Selector[],
-  properties: CssProperty[]
+  properties: CssProperty[],
 ): StyleRule {
   return {
     type: "style",
@@ -53,25 +53,25 @@ export function supportsRule(query: string, rules: CssRule[]): SupportsRule {
 export function containerRule(
   query: string,
   rules: CssRule[],
-  name?: string
+  name?: string,
 ): ContainerRule {
   return {
     type: "container",
     query,
     rules,
-    ...(name !== undefined && { name }),
+    name,
   };
 }
 
 export function keyframesRule(
   name: string,
-  frames: Record<string, CssProperty[]>
+  frames: Record<string, CssProperty[]>,
 ): KeyframesRule {
   const frameList: KeyframeFrame[] = Object.entries(frames).map(
     ([offset, properties]) => ({
       offset,
       properties,
-    })
+    }),
   );
   return {
     type: "keyframes",
@@ -106,7 +106,7 @@ export function propertyRule(
   name: string,
   syntax: string,
   inherits: boolean,
-  initialValue?: string
+  initialValue?: string,
 ): PropertyRule {
   return {
     type: "property",
@@ -122,7 +122,7 @@ export function propertyRule(
 export function prop(
   name: string,
   value: CssValue,
-  important?: boolean
+  important?: boolean,
 ): CssProperty {
   return {
     name,
@@ -190,7 +190,10 @@ export function compound(...selectors: SimpleSelector[]): CompoundSelector {
   };
 }
 
-export function descendant(ancestor: Selector, desc: Selector): ComplexSelector {
+export function descendant(
+  ancestor: Selector,
+  desc: Selector,
+): ComplexSelector {
   return {
     type: "complex",
     left: ancestor,

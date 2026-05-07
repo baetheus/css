@@ -2,11 +2,17 @@
 
 ## Context
 
-**Problem**: The nullpub/css Sass library provides a comprehensive set of utility classes but is tied to the Sass build system. We want a pure TypeScript solution that can generate CSS at runtime or build-time without Sass dependencies.
+**Problem**: The nullpub/css Sass library provides a comprehensive set of
+utility classes but is tied to the Sass build system. We want a pure TypeScript
+solution that can generate CSS at runtime or build-time without Sass
+dependencies.
 
-**Approach**: Build a layered CSS library with vanilla-extract compatible APIs, then implement the nullpub utility classes on top. The library focuses on CSS AST representation and string rendering (no DOM injection yet).
+**Approach**: Build a layered CSS library with vanilla-extract compatible APIs,
+then implement the nullpub utility classes on top. The library focuses on CSS
+AST representation and string rendering (no DOM injection yet).
 
 **Key decisions**:
+
 - Content-addressable class naming (hash of properties, configurable)
 - API-compatible with vanilla-extract
 - Include recipes API for variants
@@ -57,11 +63,13 @@ deno.json
 ## Verification
 
 After each phase:
+
 1. Run `deno test` to verify tests pass
 2. Run `deno check src/` to verify types
 3. Generate sample CSS output and inspect for correctness
 
 Final verification:
+
 - Generate the full nullpub CSS output
 - Compare utility class names and properties with original Sass output
 - Test responsive variants at each breakpoint

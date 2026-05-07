@@ -24,7 +24,7 @@ export function pixelify(property: string, value: string | number): string {
 export function transformProperties(obj: StyleProperties): CssProperty[] {
   return Object.entries(obj)
     .filter(
-      ([key]) => !key.startsWith("@") && key !== "vars" && key !== "selectors"
+      ([key]) => !key.startsWith("@") && key !== "vars" && key !== "selectors",
     )
     .map(([key, value]) => prop(toKebabCase(key), pixelify(key, value!)));
 }

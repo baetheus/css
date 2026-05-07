@@ -47,9 +47,8 @@ export function renderValue(value: CssValue): string {
   if (value.type === "fallback") {
     return value.values.map(renderValue).join(", ");
   }
-  // Exhaustive check
-  const _exhaustive: never = value;
-  return _exhaustive;
+
+  throw new TypeError(`Cannot render value of type ${typeof value}`, value);
 }
 
 export function renderProperty(property: CssProperty): string {
@@ -87,7 +86,7 @@ export function renderSelector(selector: Selector): string {
 export function renderRule(
   rule: CssRule,
   options?: RenderOptions,
-  depth: number = 0
+  depth: number = 0,
 ): string {
   const opts = resolveOptions(options);
   const { indent, newline, minify } = opts;
@@ -167,14 +166,16 @@ export function renderRule(
       if (rule.initialValue !== undefined) {
         props.push(`${innerIndent}initial-value: ${rule.initialValue}`);
       }
-      return `${baseIndent}@property ${rule.name}${space}{${newline}${props.join(propSep)}${propSep}${baseIndent}}`;
+      return `${baseIndent}@property ${rule.name}${space}{${newline}${
+        props.join(propSep)
+      }${propSep}${baseIndent}}`;
     }
   }
 }
 
 export function renderCss(
   document: CssDocument,
-  options?: RenderOptions
+  options?: RenderOptions,
 ): string {
   const opts = resolveOptions(options);
   return document.rules

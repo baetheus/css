@@ -2,7 +2,7 @@
 export function validateSelector(selector: string): void {
   if (!selector.includes("&")) {
     throw new Error(
-      `Invalid selector "${selector}": must reference the element with &`
+      `Invalid selector "${selector}": must reference the element with &`,
     );
   }
 }

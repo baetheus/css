@@ -2,7 +2,9 @@
 
 ## Objective
 
-Build higher-level combinators that compile type-safe style objects to the CSS AST from Phase 1. These handle property transformation, validation, and CSS variable helpers.
+Build higher-level combinators that compile type-safe style objects to the CSS
+AST from Phase 1. These handle property transformation, validation, and CSS
+variable helpers.
 
 ## Dependencies
 
@@ -16,7 +18,7 @@ Build higher-level combinators that compile type-safe style objects to the CSS A
 Type-safe style objects using csstype:
 
 ```typescript
-import type * as CSS from 'csstype';
+import type * as CSS from "csstype";
 
 // Base style properties from csstype
 type StyleProperties = CSS.Properties<string | number>;
@@ -30,10 +32,10 @@ interface StyleObject extends StyleProperties {
   selectors?: Record<string, StyleProperties>;
 
   // At-rules with nested styles
-  '@media'?: Record<string, StyleObject>;
-  '@supports'?: Record<string, StyleObject>;
-  '@container'?: Record<string, StyleObject>;
-  '@layer'?: Record<string, StyleObject>;
+  "@media"?: Record<string, StyleObject>;
+  "@supports"?: Record<string, StyleObject>;
+  "@container"?: Record<string, StyleObject>;
+  "@layer"?: Record<string, StyleObject>;
 }
 
 // Array form for composition (later styles win)
@@ -41,8 +43,8 @@ type StyleInput = StyleObject | readonly StyleInput[];
 
 // Compiled output
 interface CompiledStyles {
-  className: string;           // The generated class name
-  rules: readonly CssRule[];   // AST rules to render
+  className: string; // The generated class name
+  rules: readonly CssRule[]; // AST rules to render
 }
 ```
 
@@ -52,30 +54,30 @@ Properties that don't get 'px' suffix:
 
 ```typescript
 export const UNITLESS_PROPERTIES: ReadonlySet<string> = new Set([
-  'animationIterationCount',
-  'borderImageSlice',
-  'columnCount',
-  'columns',
-  'fillOpacity',
-  'flex',
-  'flexGrow',
-  'flexShrink',
-  'fontWeight',
-  'gridColumn',
-  'gridColumnEnd',
-  'gridColumnStart',
-  'gridRow',
-  'gridRowEnd',
-  'gridRowStart',
-  'lineHeight',
-  'opacity',
-  'order',
-  'orphans',
-  'strokeOpacity',
-  'tabSize',
-  'widows',
-  'zIndex',
-  'zoom',
+  "animationIterationCount",
+  "borderImageSlice",
+  "columnCount",
+  "columns",
+  "fillOpacity",
+  "flex",
+  "flexGrow",
+  "flexShrink",
+  "fontWeight",
+  "gridColumn",
+  "gridColumnEnd",
+  "gridColumnStart",
+  "gridRow",
+  "gridRowEnd",
+  "gridRowStart",
+  "lineHeight",
+  "opacity",
+  "order",
+  "orphans",
+  "strokeOpacity",
+  "tabSize",
+  "widows",
+  "zIndex",
+  "zoom",
 ]);
 ```
 
@@ -84,16 +86,18 @@ export const UNITLESS_PROPERTIES: ReadonlySet<string> = new Set([
 Property transformations:
 
 ```typescript
-import { UNITLESS_PROPERTIES } from './unitless.js';
+import { UNITLESS_PROPERTIES } from "./unitless.js";
 
 // camelCase to kebab-case
 function toKebabCase(prop: string): string {
-  return prop.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`);
+  return prop.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
 }
 
 // Add 'px' to numbers for properties that need units
 function pixelify(prop: string, value: string | number): string {
-  if (typeof value === 'number' && value !== 0 && !UNITLESS_PROPERTIES.has(prop)) {
+  if (
+    typeof value === "number" && value !== 0 && !UNITLESS_PROPERTIES.has(prop)
+  ) {
     return `${value}px`;
   }
   return String(value);
@@ -102,7 +106,9 @@ function pixelify(prop: string, value: string | number): string {
 // Transform a style object's properties to CssProperty[]
 function transformProperties(obj: StyleProperties): CssProperty[] {
   return Object.entries(obj)
-    .filter(([key]) => !key.startsWith('@') && key !== 'vars' && key !== 'selectors')
+    .filter(([key]) =>
+      !key.startsWith("@") && key !== "vars" && key !== "selectors"
+    )
     .map(([key, value]) => prop(toKebabCase(key), pixelify(key, value)));
 }
 ```
@@ -114,9 +120,9 @@ Selector and query validation:
 ```typescript
 // Validate selector references the element with &
 function validateSelector(selector: string): void {
-  if (!selector.includes('&')) {
+  if (!selector.includes("&")) {
     throw new Error(
-      `Invalid selector "${selector}": must reference the element with &`
+      `Invalid selector "${selector}": must reference the element with &`,
     );
   }
 }
@@ -124,10 +130,13 @@ function validateSelector(selector: string): void {
 // Basic media query validation
 function validateMediaQuery(query: string): void {
   if (!query.trim()) {
-    throw new Error('Media query cannot be empty');
+    throw new Error("Media query cannot be empty");
   }
   // Basic syntax check - must have parentheses or valid keywords
-  if (!query.includes('(') && !['all', 'print', 'screen'].some(k => query.includes(k))) {
+  if (
+    !query.includes("(") &&
+    !["all", "print", "screen"].some((k) => query.includes(k))
+  ) {
     throw new Error(`Invalid media query: ${query}`);
   }
 }
@@ -140,17 +149,19 @@ CSS variable helpers:
 ```typescript
 // Create a var() reference
 function cssVarRef(name: string, fallback?: string): string {
-  const varName = name.startsWith('--') ? name : `--${name}`;
+  const varName = name.startsWith("--") ? name : `--${name}`;
   return fallback ? `var(${varName}, ${fallback})` : `var(${varName})`;
 }
 
 // Create a CSS variable name (for use in vars object)
 function cssVarName(name: string): string {
-  return name.startsWith('--') ? name : `--${name}`;
+  return name.startsWith("--") ? name : `--${name}`;
 }
 
 // Create variable assignments from vars object
-function createVarAssignments(vars: Record<string, string | number>): CssProperty[] {
+function createVarAssignments(
+  vars: Record<string, string | number>,
+): CssProperty[] {
   return Object.entries(vars).map(([name, value]) =>
     prop(cssVarName(name), String(value))
   );
@@ -162,8 +173,8 @@ function createVarAssignments(vars: Record<string, string | number>): CssPropert
 Compile StyleObject to AST:
 
 ```typescript
-import type { StyleObject, StyleInput } from './types.js';
-import type { CssRule, Selector } from '../ast/types.js';
+import type { StyleInput, StyleObject } from "./types.js";
+import type { CssRule, Selector } from "../ast/types.js";
 
 // Deep merge style objects (later wins)
 function mergeStyles(...inputs: StyleInput[]): StyleObject {
@@ -172,11 +183,24 @@ function mergeStyles(...inputs: StyleInput[]): StyleObject {
     Object.assign(result, input);
     // Deep merge nested objects
     if (input.vars) result.vars = { ...result.vars, ...input.vars };
-    if (input.selectors) result.selectors = { ...result.selectors, ...input.selectors };
-    if (input['@media']) result['@media'] = { ...result['@media'], ...input['@media'] };
-    if (input['@supports']) result['@supports'] = { ...result['@supports'], ...input['@supports'] };
-    if (input['@container']) result['@container'] = { ...result['@container'], ...input['@container'] };
-    if (input['@layer']) result['@layer'] = { ...result['@layer'], ...input['@layer'] };
+    if (input.selectors) {
+      result.selectors = { ...result.selectors, ...input.selectors };
+    }
+    if (input["@media"]) {
+      result["@media"] = { ...result["@media"], ...input["@media"] };
+    }
+    if (input["@supports"]) {
+      result["@supports"] = { ...result["@supports"], ...input["@supports"] };
+    }
+    if (input["@container"]) {
+      result["@container"] = {
+        ...result["@container"],
+        ...input["@container"],
+      };
+    }
+    if (input["@layer"]) {
+      result["@layer"] = { ...result["@layer"], ...input["@layer"] };
+    }
   }
   return result;
 }
@@ -202,15 +226,15 @@ function compileStyle(className: string, input: StyleInput): CssRule[] {
       validateSelector(sel);
       const resolvedSelector = sel.replace(/&/g, `.${className}`);
       rules.push(styleRule(
-        { type: 'simple', value: resolvedSelector },
-        transformProperties(props)
+        { type: "simple", value: resolvedSelector },
+        transformProperties(props),
       ));
     }
   }
 
   // Media queries
-  if (style['@media']) {
-    for (const [query, nested] of Object.entries(style['@media'])) {
+  if (style["@media"]) {
+    for (const [query, nested] of Object.entries(style["@media"])) {
       validateMediaQuery(query);
       const nestedRules = compileStyle(className, nested);
       rules.push(mediaRule(query, nestedRules));
@@ -218,24 +242,24 @@ function compileStyle(className: string, input: StyleInput): CssRule[] {
   }
 
   // Supports queries
-  if (style['@supports']) {
-    for (const [query, nested] of Object.entries(style['@supports'])) {
+  if (style["@supports"]) {
+    for (const [query, nested] of Object.entries(style["@supports"])) {
       const nestedRules = compileStyle(className, nested);
       rules.push(supportsRule(query, nestedRules));
     }
   }
 
   // Container queries
-  if (style['@container']) {
-    for (const [query, nested] of Object.entries(style['@container'])) {
+  if (style["@container"]) {
+    for (const [query, nested] of Object.entries(style["@container"])) {
       const nestedRules = compileStyle(className, nested);
       rules.push(containerRule(query, nestedRules));
     }
   }
 
   // Layers
-  if (style['@layer']) {
-    for (const [name, nested] of Object.entries(style['@layer'])) {
+  if (style["@layer"]) {
+    for (const [name, nested] of Object.entries(style["@layer"])) {
       const nestedRules = compileStyle(className, nested);
       rules.push(layerRule(name, nestedRules));
     }
@@ -248,12 +272,12 @@ function compileStyle(className: string, input: StyleInput): CssRule[] {
 ### `src/combinators/index.ts`
 
 ```typescript
-export * from './types.js';
-export { UNITLESS_PROPERTIES } from './unitless.js';
-export { toKebabCase, pixelify, transformProperties } from './transform.js';
-export { validateSelector, validateMediaQuery } from './validate.js';
-export { cssVarRef, cssVarName, createVarAssignments } from './variables.js';
-export { mergeStyles, compileStyle } from './compile.js';
+export * from "./types.js";
+export { UNITLESS_PROPERTIES } from "./unitless.js";
+export { pixelify, toKebabCase, transformProperties } from "./transform.js";
+export { validateMediaQuery, validateSelector } from "./validate.js";
+export { createVarAssignments, cssVarName, cssVarRef } from "./variables.js";
+export { compileStyle, mergeStyles } from "./compile.js";
 ```
 
 ## Tests
@@ -302,6 +326,7 @@ console.log(renderCss({ rules }));
 ```
 
 Expected output:
+
 ```css
 .button {
   --primaryColor: #007bff;

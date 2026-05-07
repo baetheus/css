@@ -2,7 +2,9 @@
 
 ## Objective
 
-Implement a vanilla-extract compatible API layer on top of the combinators. This provides `style()`, `globalStyle()`, `createTheme()`, `keyframes()`, and the `recipe()` API.
+Implement a vanilla-extract compatible API layer on top of the combinators. This
+provides `style()`, `globalStyle()`, `createTheme()`, `keyframes()`, and the
+`recipe()` API.
 
 ## Dependencies
 
@@ -18,15 +20,13 @@ Theme and variant types:
 ```typescript
 // Theme contract types
 type ThemeVars<T> = T extends Record<string, infer V>
-  ? V extends string | null
-    ? Record<keyof T, string>  // var() references
-    : { [K in keyof T]: ThemeVars<T[K]> }
+  ? V extends string | null ? Record<keyof T, string> // var() references
+  : { [K in keyof T]: ThemeVars<T[K]> }
   : never;
 
 type ThemeValues<T> = T extends Record<string, infer V>
-  ? V extends string
-    ? Record<keyof T, string>  // actual values
-    : { [K in keyof T]: ThemeValues<T[K]> }
+  ? V extends string ? Record<keyof T, string> // actual values
+  : { [K in keyof T]: ThemeValues<T[K]> }
   : never;
 
 // Recipe variant types
@@ -71,14 +71,14 @@ function djb2(str: string): number {
 function hashStyle(style: StyleInput): string {
   const content = JSON.stringify(style);
   const hash = djb2(content);
-  return hash.toString(36).padStart(7, '0');  // 7 chars, zero-padded
+  return hash.toString(36).padStart(7, "0"); // 7 chars, zero-padded
 }
 
 // Configuration
 interface ClassNameConfig {
-  prefix?: string;        // e.g., 'css_'
-  debug?: boolean;        // Include readable name
-  hashFn?: (content: string) => string;  // Custom hash
+  prefix?: string; // e.g., 'css_'
+  debug?: boolean; // Include readable name
+  hashFn?: (content: string) => string; // Custom hash
 }
 
 let config: ClassNameConfig = {};
@@ -90,7 +90,7 @@ function setClassNameConfig(c: ClassNameConfig): void {
 // Generate class name
 function generateClassName(style: StyleInput, debugName?: string): string {
   const hash = (config.hashFn ?? hashStyle)(style);
-  const prefix = config.prefix ?? '';
+  const prefix = config.prefix ?? "";
 
   if (config.debug && debugName) {
     return `${prefix}${debugName}_${hash}`;
@@ -104,8 +104,8 @@ function generateClassName(style: StyleInput, debugName?: string): string {
 Accumulates CSS during generation:
 
 ```typescript
-import type { CssRule, CssDocument } from '../ast/types.js';
-import { renderCss, type RenderOptions } from '../ast/render.js';
+import type { CssDocument, CssRule } from "../ast/types.js";
+import { renderCss, type RenderOptions } from "../ast/render.js";
 
 interface StyleRegistry {
   readonly rules: CssRule[];
@@ -122,7 +122,9 @@ function createStyleRegistry(): StyleRegistry {
   const rules: CssRule[] = [];
 
   return {
-    get rules() { return rules; },
+    get rules() {
+      return rules;
+    },
     addClass(className, newRules) {
       rules.push(...newRules);
     },
@@ -167,10 +169,10 @@ function setRegistry(registry: StyleRegistry): void {
 The core `style()` and `styleVariants()` functions:
 
 ```typescript
-import type { StyleInput } from '../combinators/types.js';
-import { compileStyle } from '../combinators/compile.js';
-import { generateClassName } from './hash.js';
-import { getRegistry } from './registry.js';
+import type { StyleInput } from "../combinators/types.js";
+import { compileStyle } from "../combinators/compile.js";
+import { generateClassName } from "./hash.js";
+import { getRegistry } from "./registry.js";
 
 // Create a scoped style, returns class name
 function style(input: StyleInput, debugName?: string): string {
@@ -183,11 +185,14 @@ function style(input: StyleInput, debugName?: string): string {
 // Create variants from a record
 function styleVariants<T extends string | number | symbol>(
   variants: Record<T, StyleInput>,
-  debugName?: string
+  debugName?: string,
 ): Record<T, string> {
   const result = {} as Record<T, string>;
   for (const [key, input] of Object.entries(variants) as [T, StyleInput][]) {
-    result[key] = style(input, debugName ? `${debugName}_${String(key)}` : undefined);
+    result[key] = style(
+      input,
+      debugName ? `${debugName}_${String(key)}` : undefined,
+    );
   }
   return result;
 }
@@ -196,12 +201,15 @@ function styleVariants<T extends string | number | symbol>(
 function styleVariants<Data extends Record<string, unknown>>(
   data: Data,
   mapFn: (value: Data[keyof Data], key: keyof Data) => StyleInput,
-  debugName?: string
+  debugName?: string,
 ): Record<keyof Data, string> {
   const result = {} as Record<keyof Data, string>;
   for (const [key, value] of Object.entries(data)) {
     const input = mapFn(value as Data[keyof Data], key as keyof Data);
-    result[key as keyof Data] = style(input, debugName ? `${debugName}_${key}` : undefined);
+    result[key as keyof Data] = style(
+      input,
+      debugName ? `${debugName}_${key}` : undefined,
+    );
   }
   return result;
 }
@@ -212,10 +220,13 @@ function styleVariants<Data extends Record<string, unknown>>(
 Global styles:
 
 ```typescript
-import type { StyleInput } from '../combinators/types.js';
-import { transformProperties, createVarAssignments } from '../combinators/index.js';
-import { styleRule } from '../ast/builders.js';
-import { getRegistry } from './registry.js';
+import type { StyleInput } from "../combinators/types.js";
+import {
+  createVarAssignments,
+  transformProperties,
+} from "../combinators/index.js";
+import { styleRule } from "../ast/builders.js";
+import { getRegistry } from "./registry.js";
 
 function globalStyle(selector: string, input: StyleInput): void {
   const style = Array.isArray(input) ? mergeStyles(...input) : input;
@@ -225,16 +236,16 @@ function globalStyle(selector: string, input: StyleInput): void {
   ];
 
   const rule = styleRule(
-    { type: 'simple', value: selector },
-    properties
+    { type: "simple", value: selector },
+    properties,
   );
 
   getRegistry().addGlobal([rule]);
 
   // Handle nested at-rules for global styles
-  if (style['@media']) {
-    for (const [query, nested] of Object.entries(style['@media'])) {
-      globalStyle(selector, nested);  // Recursively handle, wrapped in media
+  if (style["@media"]) {
+    for (const [query, nested] of Object.entries(style["@media"])) {
+      globalStyle(selector, nested); // Recursively handle, wrapped in media
     }
   }
 }
@@ -245,9 +256,9 @@ function globalStyle(selector: string, input: StyleInput): void {
 Theme and CSS variable APIs:
 
 ```typescript
-import { generateClassName, hashStyle } from './hash.js';
-import { getRegistry } from './registry.js';
-import { globalStyle } from './global.js';
+import { generateClassName, hashStyle } from "./hash.js";
+import { getRegistry } from "./registry.js";
+import { globalStyle } from "./global.js";
 
 // Create a single CSS variable
 function createVar(debugName?: string): string {
@@ -260,17 +271,17 @@ function createVar(debugName?: string): string {
 // Walk an object tree, replacing values with var() references
 function walkContract<T>(
   obj: T,
-  path: string[] = []
+  path: string[] = [],
 ): ThemeVars<T> {
   const result: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
     const currentPath = [...path, key];
-    if (value === null || typeof value === 'string') {
+    if (value === null || typeof value === "string") {
       // Leaf node - create var reference
-      const varName = `--${currentPath.join('-')}`;
+      const varName = `--${currentPath.join("-")}`;
       result[key] = `var(${varName})`;
-    } else if (typeof value === 'object') {
+    } else if (typeof value === "object") {
       // Recurse into nested object
       result[key] = walkContract(value, currentPath);
     }
@@ -281,7 +292,7 @@ function walkContract<T>(
 
 // Create theme contract (shape only, no values)
 function createThemeContract<T extends Record<string, unknown>>(
-  contract: T
+  contract: T,
 ): ThemeVars<T> {
   return walkContract(contract);
 }
@@ -290,20 +301,29 @@ function createThemeContract<T extends Record<string, unknown>>(
 function walkValues<T>(
   contract: ThemeVars<T>,
   values: ThemeValues<T>,
-  path: string[] = []
+  path: string[] = [],
 ): Record<string, string> {
   const result: Record<string, string> = {};
 
-  for (const [key, varRef] of Object.entries(contract as Record<string, unknown>)) {
+  for (
+    const [key, varRef] of Object.entries(contract as Record<string, unknown>)
+  ) {
     const value = (values as Record<string, unknown>)[key];
     const currentPath = [...path, key];
 
-    if (typeof varRef === 'string' && varRef.startsWith('var(')) {
+    if (typeof varRef === "string" && varRef.startsWith("var(")) {
       // Leaf - extract var name and map to value
-      const varName = varRef.slice(4, -1);  // Remove var( and )
+      const varName = varRef.slice(4, -1); // Remove var( and )
       result[varName] = String(value);
-    } else if (typeof varRef === 'object' && typeof value === 'object') {
-      Object.assign(result, walkValues(varRef as ThemeVars<unknown>, value as ThemeValues<unknown>, currentPath));
+    } else if (typeof varRef === "object" && typeof value === "object") {
+      Object.assign(
+        result,
+        walkValues(
+          varRef as ThemeVars<unknown>,
+          value as ThemeValues<unknown>,
+          currentPath,
+        ),
+      );
     }
   }
 
@@ -314,7 +334,7 @@ function walkValues<T>(
 function createTheme<T extends Record<string, unknown>>(
   contract: ThemeVars<T>,
   values: ThemeValues<T>,
-  debugName?: string
+  debugName?: string,
 ): string {
   const vars = walkValues(contract, values);
   const className = generateClassName(vars, debugName);
@@ -327,7 +347,7 @@ function createTheme<T extends Record<string, unknown>>(
 // Create global theme (applies to selector, not class)
 function createGlobalTheme<T extends Record<string, unknown>>(
   selector: string,
-  tokens: T
+  tokens: T,
 ): ThemeVars<T> {
   const contract = walkContract(tokens);
   const vars = walkValues(contract, tokens as ThemeValues<T>);
@@ -340,7 +360,7 @@ function createGlobalTheme<T extends Record<string, unknown>>(
 // Assign vars at runtime (returns style object for inline use)
 function assignInlineVars(
   contract: ThemeVars<unknown>,
-  values: ThemeValues<unknown>
+  values: ThemeValues<unknown>,
 ): Record<string, string> {
   return walkValues(contract, values);
 }
@@ -349,14 +369,14 @@ function assignInlineVars(
 ### `src/vanilla/keyframes.ts`
 
 ```typescript
-import { keyframesRule, type KeyframeFrame } from '../ast/builders.js';
-import { transformProperties } from '../combinators/transform.js';
-import { hashStyle } from './hash.js';
-import { getRegistry } from './registry.js';
+import { type KeyframeFrame, keyframesRule } from "../ast/builders.js";
+import { transformProperties } from "../combinators/transform.js";
+import { hashStyle } from "./hash.js";
+import { getRegistry } from "./registry.js";
 
 function keyframes(
   frames: Record<string, StyleInput>,
-  debugName?: string
+  debugName?: string,
 ): string {
   const name = debugName
     ? `${debugName}_${hashStyle(frames)}`
@@ -365,8 +385,10 @@ function keyframes(
   const keyframeFrames: KeyframeFrame[] = Object.entries(frames).map(
     ([offset, style]) => ({
       offset,
-      properties: transformProperties(Array.isArray(style) ? mergeStyles(...style) : style),
-    })
+      properties: transformProperties(
+        Array.isArray(style) ? mergeStyles(...style) : style,
+      ),
+    }),
   );
 
   const rule = keyframesRule(name, keyframeFrames);
@@ -384,7 +406,7 @@ interface FontFaceOptions {
   fontFamily?: string;
   fontWeight?: string | number | [number, number];
   fontStyle?: string;
-  fontDisplay?: 'auto' | 'block' | 'swap' | 'fallback' | 'optional';
+  fontDisplay?: "auto" | "block" | "swap" | "fallback" | "optional";
   fontStretch?: string;
   unicodeRange?: string;
 }
@@ -393,20 +415,29 @@ function fontFace(options: FontFaceOptions, debugName?: string): string {
   const family = options.fontFamily ?? debugName ?? hashStyle(options);
 
   const properties: CssProperty[] = [
-    prop('font-family', `"${family}"`),
-    prop('src', Array.isArray(options.src) ? options.src.join(', ') : options.src),
+    prop("font-family", `"${family}"`),
+    prop(
+      "src",
+      Array.isArray(options.src) ? options.src.join(", ") : options.src,
+    ),
   ];
 
   if (options.fontWeight !== undefined) {
     const weight = Array.isArray(options.fontWeight)
-      ? options.fontWeight.join(' ')
+      ? options.fontWeight.join(" ")
       : String(options.fontWeight);
-    properties.push(prop('font-weight', weight));
+    properties.push(prop("font-weight", weight));
   }
-  if (options.fontStyle) properties.push(prop('font-style', options.fontStyle));
-  if (options.fontDisplay) properties.push(prop('font-display', options.fontDisplay));
-  if (options.fontStretch) properties.push(prop('font-stretch', options.fontStretch));
-  if (options.unicodeRange) properties.push(prop('unicode-range', options.unicodeRange));
+  if (options.fontStyle) properties.push(prop("font-style", options.fontStyle));
+  if (options.fontDisplay) {
+    properties.push(prop("font-display", options.fontDisplay));
+  }
+  if (options.fontStretch) {
+    properties.push(prop("font-stretch", options.fontStretch));
+  }
+  if (options.unicodeRange) {
+    properties.push(prop("unicode-range", options.unicodeRange));
+  }
 
   const rule = fontFaceRule(properties);
   getRegistry().addFontFace(rule);
@@ -460,36 +491,50 @@ interface RecipeFunction<V extends VariantDefinitions> {
 
 function recipe<V extends VariantDefinitions>(
   options: RecipeOptions<V>,
-  debugName?: string
+  debugName?: string,
 ): RecipeFunction<V> {
   // Generate base class
   const baseClassName = options.base
     ? style(options.base, debugName ? `${debugName}_base` : undefined)
-    : '';
+    : "";
 
   // Generate variant classes
-  const variantClassNames = {} as { [K in keyof V]: Record<keyof V[K], string> };
+  const variantClassNames = {} as {
+    [K in keyof V]: Record<keyof V[K], string>;
+  };
 
   if (options.variants) {
-    for (const [variantName, variantOptions] of Object.entries(options.variants)) {
-      variantClassNames[variantName as keyof V] = {} as Record<keyof V[keyof V], string>;
+    for (
+      const [variantName, variantOptions] of Object.entries(options.variants)
+    ) {
+      variantClassNames[variantName as keyof V] = {} as Record<
+        keyof V[keyof V],
+        string
+      >;
 
       for (const [optionName, optionStyle] of Object.entries(variantOptions)) {
         const className = style(
           optionStyle,
-          debugName ? `${debugName}_${variantName}_${optionName}` : undefined
+          debugName ? `${debugName}_${variantName}_${optionName}` : undefined,
         );
-        (variantClassNames[variantName as keyof V] as Record<string, string>)[optionName] = className;
+        (variantClassNames[variantName as keyof V] as Record<string, string>)[
+          optionName
+        ] = className;
       }
     }
   }
 
   // Generate compound variant classes
-  const compoundClassNames: Array<{ condition: Partial<VariantSelection<V>>; className: string }> = [];
+  const compoundClassNames: Array<
+    { condition: Partial<VariantSelection<V>>; className: string }
+  > = [];
 
   if (options.compoundVariants) {
     for (const compound of options.compoundVariants) {
-      const className = style(compound.style, debugName ? `${debugName}_compound` : undefined);
+      const className = style(
+        compound.style,
+        debugName ? `${debugName}_compound` : undefined,
+      );
       compoundClassNames.push({ condition: compound.variants, className });
     }
   }
@@ -501,12 +546,20 @@ function recipe<V extends VariantDefinitions>(
     if (baseClassName) classes.push(baseClassName);
 
     // Apply defaults then selection
-    const resolved = { ...options.defaultVariants, ...selection } as VariantSelection<V>;
+    const resolved = {
+      ...options.defaultVariants,
+      ...selection,
+    } as VariantSelection<V>;
 
     // Add variant classes
     for (const [variantName, optionName] of Object.entries(resolved)) {
-      if (optionName !== undefined && variantClassNames[variantName as keyof V]) {
-        const className = (variantClassNames[variantName as keyof V] as Record<string, string>)[optionName as string];
+      if (
+        optionName !== undefined && variantClassNames[variantName as keyof V]
+      ) {
+        const className =
+          (variantClassNames[variantName as keyof V] as Record<string, string>)[
+            optionName as string
+          ];
         if (className) classes.push(className);
       }
     }
@@ -514,12 +567,12 @@ function recipe<V extends VariantDefinitions>(
     // Check compound variants
     for (const { condition, className } of compoundClassNames) {
       const matches = Object.entries(condition).every(
-        ([k, v]) => resolved[k as keyof V] === v
+        ([k, v]) => resolved[k as keyof V] === v,
       );
       if (matches) classes.push(className);
     }
 
-    return classes.join(' ');
+    return classes.join(" ");
   };
 
   recipeFn.variants = () => Object.keys(options.variants ?? {}) as (keyof V)[];
@@ -533,30 +586,36 @@ function recipe<V extends VariantDefinitions>(
 
 ```typescript
 // Core
-export { style, styleVariants } from './style.js';
-export { globalStyle } from './global.js';
+export { style, styleVariants } from "./style.js";
+export { globalStyle } from "./global.js";
 
 // Variables & Theming
-export { createVar, createTheme, createThemeContract, createGlobalTheme, assignInlineVars } from './variables.js';
+export {
+  assignInlineVars,
+  createGlobalTheme,
+  createTheme,
+  createThemeContract,
+  createVar,
+} from "./variables.js";
 
 // Animations & Fonts
-export { keyframes } from './keyframes.js';
-export { fontFace, type FontFaceOptions } from './fontface.js';
+export { keyframes } from "./keyframes.js";
+export { fontFace, type FontFaceOptions } from "./fontface.js";
 
 // Layers
-export { layer, globalLayer } from './layer.js';
+export { globalLayer, layer } from "./layer.js";
 
 // Recipes
-export { recipe, type RecipeOptions } from './recipe.js';
+export { recipe, type RecipeOptions } from "./recipe.js";
 
 // Registry
-export { createStyleRegistry, getRegistry, setRegistry } from './registry.js';
+export { createStyleRegistry, getRegistry, setRegistry } from "./registry.js";
 
 // Configuration
-export { setClassNameConfig, type ClassNameConfig } from './hash.js';
+export { type ClassNameConfig, setClassNameConfig } from "./hash.js";
 
 // Types
-export * from './types.js';
+export * from "./types.js";
 ```
 
 ## Tests

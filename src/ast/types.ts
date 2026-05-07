@@ -50,17 +50,6 @@ export interface PseudoSelector {
 }
 
 // Rules (discriminated union)
-export type CssRule =
-  | StyleRule
-  | FontFaceRule
-  | KeyframesRule
-  | LayerRule
-  | LayerStatementRule
-  | MediaRule
-  | SupportsRule
-  | ContainerRule
-  | PropertyRule;
-
 export interface StyleRule {
   type: "style";
   selectors: readonly Selector[];
@@ -108,7 +97,7 @@ export interface SupportsRule {
 
 export interface ContainerRule {
   type: "container";
-  name?: string;
+  name: string | undefined;
   query: string;
   rules: readonly CssRule[];
 }
@@ -124,3 +113,14 @@ export interface PropertyRule {
 export interface CssDocument {
   rules: readonly CssRule[];
 }
+
+export type CssRule =
+  | StyleRule
+  | FontFaceRule
+  | KeyframesRule
+  | LayerRule
+  | LayerStatementRule
+  | MediaRule
+  | SupportsRule
+  | ContainerRule
+  | PropertyRule;

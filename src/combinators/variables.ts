@@ -14,7 +14,7 @@ export function cssVarName(name: string): string {
 
 // Create variable assignments from vars object
 export function createVarAssignments(
-  vars: Record<string, string | number>
+  vars: Record<string, string | number>,
 ): CssProperty[] {
   return Object.entries(vars).map(([name, value]) =>
     prop(cssVarName(name), String(value))
