@@ -1,4 +1,10 @@
 {
+  "name": "@baetheus/css",
+  "version": "0.0.1",
+  "exports": {
+    "./ast": "./ast.ts",
+    "./core": "./core.ts"
+  },
   "tasks": {
     "dev": "deno run --watch main.ts"
   },
