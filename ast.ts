@@ -9,7 +9,7 @@
  * @since 0.1.0
  */
 
-import type * as CSS from "npm:csstype";
+import type { Properties } from "csstype";
 
 // CSS Values
 
@@ -405,7 +405,7 @@ export type CssRule =
  *
  * @since 0.1.0
  */
-export type StyleProperties = CSS.Properties<string | number>;
+export type StyleProperties = Properties<string | number>;
 
 /**
  * Extended style object with nesting support for at-rules and selectors.
