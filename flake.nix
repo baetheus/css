@@ -12,14 +12,30 @@
 
   outputs =
     inputs:
-    inputs.flake-parts.lib.mkFlake { inherit inputs; } (
-      inputs.import-tree.filterNot (
-        p:
-        builtins.elem (builtins.baseNameOf p) [
-          "secrets.nix"
-          "flake.nix"
-        ]
-      ) ./.
-    );
-}
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } (top: {
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x66_64-darwin"
+        "aarch64-darwin"
+      ];
 
+      perSystem =
+        { pkgs, ... }:
+        let
+          pkgs' = import inputs.nixpkgs {
+            inherit (pkgs.stdenv.hostPlatform) system;
+            config.allowUnfree = true;
+          };
+        in
+        {
+          devShells.default = pkgs'.mkShell {
+            packages = with pkgs'; [
+              deno
+              nil
+              claude-code
+            ];
+          };
+        };
+    });
+}
