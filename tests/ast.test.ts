@@ -1,4 +1,4 @@
-import { assertEquals, assertThrows } from "jsr:@std/assert";
+import { assertEquals } from "@std/assert";
 import * as ast from "../ast.ts";
 
 const MINIFIED_RENDER_OPTIONS: ast.RenderOptions = {
@@ -582,12 +582,10 @@ Deno.test("renderRule minified media rule", () => {
 // Document rendering tests
 
 Deno.test("renderCss renders multiple rules", () => {
-  const doc: ast.CssDocument = {
-    rules: [
-      ast.styleRule(ast.cls("button"), [ast.prop("color", "blue")]),
-      ast.styleRule(ast.cls("link"), [ast.prop("color", "red")]),
-    ],
-  };
+  const doc: ast.CssRule[] = [
+    ast.styleRule(ast.cls("button"), [ast.prop("color", "blue")]),
+    ast.styleRule(ast.cls("link"), [ast.prop("color", "red")]),
+  ];
   assertEquals(
     ast.renderCss(doc),
     `.button {
@@ -600,12 +598,10 @@ Deno.test("renderCss renders multiple rules", () => {
 });
 
 Deno.test("renderCss minified document", () => {
-  const doc: ast.CssDocument = {
-    rules: [
-      ast.styleRule(ast.cls("button"), [ast.prop("color", "blue")]),
-      ast.styleRule(ast.cls("link"), [ast.prop("color", "red")]),
-    ],
-  };
+  const doc: ast.CssRule[] = [
+    ast.styleRule(ast.cls("button"), [ast.prop("color", "blue")]),
+    ast.styleRule(ast.cls("link"), [ast.prop("color", "red")]),
+  ];
   assertEquals(
     ast.renderCss(doc, MINIFIED_RENDER_OPTIONS),
     ".button{color: blue;}.link{color: red;}",
@@ -613,17 +609,15 @@ Deno.test("renderCss minified document", () => {
 });
 
 Deno.test("renderCss integration test matching plan example", () => {
-  const doc: ast.CssDocument = {
-    rules: [
-      ast.styleRule(ast.cls("button"), [
-        ast.prop("padding", "8px 16px"),
-        ast.prop("backgroundColor", "blue"),
-      ]),
-      ast.mediaRule("(min-width: 768px)", [
-        ast.styleRule(ast.cls("button"), [ast.prop("padding", "12px 24px")]),
-      ]),
-    ],
-  };
+  const doc: ast.CssRule[] = [
+    ast.styleRule(ast.cls("button"), [
+      ast.prop("padding", "8px 16px"),
+      ast.prop("backgroundColor", "blue"),
+    ]),
+    ast.mediaRule("(min-width: 768px)", [
+      ast.styleRule(ast.cls("button"), [ast.prop("padding", "12px 24px")]),
+    ]),
+  ];
   assertEquals(
     ast.renderCss(doc),
     `.button {
@@ -638,8 +632,6 @@ Deno.test("renderCss integration test matching plan example", () => {
   );
 });
 
-// Transform tests
-
 Deno.test("camelToKebab converts camelCase to kebab-case", () => {
   assertEquals(ast.camelToKebab("backgroundColor"), "background-color");
   assertEquals(
@@ -648,389 +640,4 @@ Deno.test("camelToKebab converts camelCase to kebab-case", () => {
   );
   assertEquals(ast.camelToKebab("color"), "color");
   assertEquals(ast.camelToKebab("zIndex"), "z-index");
-});
-
-Deno.test("pixelify adds px to numbers for dimensional properties", () => {
-  assertEquals(ast.pixelify("padding", 10), "10px");
-  assertEquals(ast.pixelify("margin", 20), "20px");
-  assertEquals(ast.pixelify("width", 100), "100px");
-  assertEquals(ast.pixelify("fontSize", 16), "16px");
-});
-
-Deno.test("pixelify does not add px to zero", () => {
-  assertEquals(ast.pixelify("padding", 0), "0");
-  assertEquals(ast.pixelify("margin", 0), "0");
-});
-
-Deno.test("pixelify does not add px to unitless properties", () => {
-  assertEquals(ast.pixelify("opacity", 0.5), "0.5");
-  assertEquals(ast.pixelify("zIndex", 10), "10");
-  assertEquals(ast.pixelify("fontWeight", 700), "700");
-  assertEquals(ast.pixelify("flexGrow", 1), "1");
-  assertEquals(ast.pixelify("lineHeight", 1.5), "1.5");
-});
-
-Deno.test("pixelify passes through strings unchanged", () => {
-  assertEquals(ast.pixelify("padding", "10px"), "10px");
-  assertEquals(ast.pixelify("color", "red"), "red");
-  assertEquals(ast.pixelify("background", "url(image.png)"), "url(image.png)");
-});
-
-Deno.test("transformProperties converts full style object", () => {
-  const result = ast.transformProperties({
-    backgroundColor: "blue",
-    padding: 10,
-    opacity: 0.5,
-  });
-
-  assertEquals(result.length, 3);
-  assertEquals(result[0], { name: "background-color", value: "blue" });
-  assertEquals(result[1], { name: "padding", value: "10px" });
-  assertEquals(result[2], { name: "opacity", value: "0.5" });
-});
-
-Deno.test("transformProperties filters out vars and selectors", () => {
-  const result = ast.transformProperties({
-    color: "red",
-    vars: { primaryColor: "blue" },
-    selectors: { "&:hover": { color: "green" } },
-  } as Record<string, unknown>);
-
-  assertEquals(result.length, 1);
-  assertEquals(result[0], { name: "color", value: "red" });
-});
-
-Deno.test("transformProperties filters out @-rules", () => {
-  const result = ast.transformProperties({
-    color: "red",
-    "@media": { "(min-width: 768px)": { color: "blue" } },
-  } as Record<string, unknown>);
-
-  assertEquals(result.length, 1);
-  assertEquals(result[0], { name: "color", value: "red" });
-});
-
-// Compile tests
-
-Deno.test("compileStyle creates simple StyleRule", () => {
-  const rules = ast.compileStyle("button", {
-    color: "blue",
-    padding: 10,
-  });
-
-  assertEquals(rules.length, 1);
-  assertEquals(rules[0].type, "style");
-
-  const css = ast.renderCss({ rules });
-  assertEquals(
-    css,
-    `.button {
-  color: blue;
-  padding: 10px;
-}`,
-  );
-});
-
-Deno.test("compileStyle handles CSS variables in vars", () => {
-  const rules = ast.compileStyle("button", {
-    vars: { primaryColor: "#007bff", spacing: "8px" },
-    color: "red",
-  });
-
-  const css = ast.renderCss({ rules });
-  assertEquals(
-    css,
-    `.button {
-  --primaryColor: #007bff;
-  --spacing: 8px;
-  color: red;
-}`,
-  );
-});
-
-Deno.test("compileStyle handles nested selectors with &", () => {
-  const rules = ast.compileStyle("button", {
-    color: "blue",
-    selectors: {
-      "&:hover": { color: "darkblue" },
-      "&:active": { color: "navy" },
-    },
-  });
-
-  assertEquals(rules.length, 3);
-
-  const css = ast.renderCss({ rules });
-  assertEquals(
-    css,
-    `.button {
-  color: blue;
-}
-.button:hover {
-  color: darkblue;
-}
-.button:active {
-  color: navy;
-}`,
-  );
-});
-
-Deno.test("compileStyle handles complex nested selectors", () => {
-  const rules = ast.compileStyle("card", {
-    padding: 16,
-    selectors: {
-      "& .title": { fontSize: 20 },
-      "&:hover .icon": { opacity: 1 },
-    },
-  });
-
-  const css = ast.renderCss({ rules });
-  assertEquals(
-    css,
-    `.card {
-  padding: 16px;
-}
-.card .title {
-  font-size: 20px;
-}
-.card:hover .icon {
-  opacity: 1;
-}`,
-  );
-});
-
-Deno.test("compileStyle handles media queries", () => {
-  const rules = ast.compileStyle("button", {
-    padding: 8,
-    "@media": {
-      "(min-width: 768px)": { padding: 16 },
-    },
-  });
-
-  const css = ast.renderCss({ rules });
-  assertEquals(
-    css,
-    `.button {
-  padding: 8px;
-}
-@media (min-width: 768px) {
-  .button {
-    padding: 16px;
-  }
-}`,
-  );
-});
-
-Deno.test("compileStyle handles supports queries", () => {
-  const rules = ast.compileStyle("grid", {
-    display: "block",
-    "@supports": {
-      "(display: grid)": { display: "grid" },
-    },
-  });
-
-  const css = ast.renderCss({ rules });
-  assertEquals(
-    css,
-    `.grid {
-  display: block;
-}
-@supports (display: grid) {
-  .grid {
-    display: grid;
-  }
-}`,
-  );
-});
-
-Deno.test("compileStyle handles container queries", () => {
-  const rules = ast.compileStyle("card", {
-    padding: 8,
-    "@container": {
-      "(min-width: 300px)": { padding: 16 },
-    },
-  });
-
-  const css = ast.renderCss({ rules });
-  assertEquals(
-    css,
-    `.card {
-  padding: 8px;
-}
-@container (min-width: 300px) {
-  .card {
-    padding: 16px;
-  }
-}`,
-  );
-});
-
-Deno.test("compileStyle handles layers", () => {
-  const rules = ast.compileStyle("button", {
-    color: "blue",
-    "@layer": {
-      utilities: { display: "flex" },
-    },
-  });
-
-  const css = ast.renderCss({ rules });
-  assertEquals(
-    css,
-    `.button {
-  color: blue;
-}
-@layer utilities {
-  .button {
-    display: flex;
-  }
-}`,
-  );
-});
-
-Deno.test("compileStyle handles multiple at-rules", () => {
-  const rules = ast.compileStyle("button", {
-    padding: 8,
-    "@media": {
-      "(min-width: 768px)": { padding: 16 },
-      "(min-width: 1024px)": { padding: 24 },
-    },
-  });
-
-  assertEquals(rules.length, 3);
-  assertEquals(rules[0].type, "style");
-  assertEquals(rules[1].type, "media");
-  assertEquals(rules[2].type, "media");
-});
-
-Deno.test("mergeStyles merges simple properties (later wins)", () => {
-  const result = ast.mergeStyles(
-    { color: "red", padding: 10 },
-    { color: "blue", margin: 20 },
-  );
-
-  assertEquals(result.color, "blue");
-  assertEquals(result.padding, 10);
-  assertEquals(result.margin, 20);
-});
-
-Deno.test("mergeStyles deep merges vars", () => {
-  const result = ast.mergeStyles(
-    { vars: { primary: "red", secondary: "green" } },
-    { vars: { primary: "blue" } },
-  );
-
-  assertEquals(result.vars, { primary: "blue", secondary: "green" });
-});
-
-Deno.test("mergeStyles deep merges selectors", () => {
-  const result = ast.mergeStyles(
-    { selectors: { "&:hover": { color: "red" } } },
-    { selectors: { "&:active": { color: "blue" } } },
-  );
-
-  assertEquals(result.selectors, {
-    "&:hover": { color: "red" },
-    "&:active": { color: "blue" },
-  });
-});
-
-Deno.test("mergeStyles deep merges @media", () => {
-  const result = ast.mergeStyles(
-    { "@media": { "(min-width: 768px)": { padding: 16 } } },
-    { "@media": { "(min-width: 1024px)": { padding: 24 } } },
-  );
-
-  assertEquals(result["@media"], {
-    "(min-width: 768px)": { padding: 16 },
-    "(min-width: 1024px)": { padding: 24 },
-  });
-});
-
-Deno.test("compileStyle handles array input (composition)", () => {
-  const base = { color: "red", padding: 8 };
-  const override = { color: "blue" };
-
-  const rules = ast.compileStyle("button", [base, override]);
-  const css = ast.renderCss({ rules });
-
-  assertEquals(
-    css,
-    `.button {
-  color: blue;
-  padding: 8px;
-}`,
-  );
-});
-
-Deno.test("compileStyle handles nested arrays", () => {
-  const a = { color: "red" };
-  const b = { padding: 8 };
-  const c = { margin: 16 };
-
-  const rules = ast.compileStyle("button", [[a, b], c]);
-  const css = ast.renderCss({ rules });
-
-  assertEquals(
-    css,
-    `.button {
-  color: red;
-  padding: 8px;
-  margin: 16px;
-}`,
-  );
-});
-
-Deno.test("validateSelector throws for selectors without &", () => {
-  assertThrows(
-    () => ast.validateSelector(".other"),
-    Error,
-    "must reference the element with &",
-  );
-});
-
-Deno.test("compileStyle throws for invalid nested selector", () => {
-  assertThrows(
-    () =>
-      ast.compileStyle("button", {
-        selectors: { ".invalid": { color: "red" } },
-      }),
-    Error,
-    "must reference the element with &",
-  );
-});
-
-Deno.test("compileStyle creates no rules for empty style", () => {
-  const rules = ast.compileStyle("empty", {});
-  assertEquals(rules.length, 0);
-});
-
-Deno.test("full example from phase-2 spec", () => {
-  const rules = ast.compileStyle("button", {
-    padding: 8,
-    backgroundColor: "blue",
-    vars: { primaryColor: "#007bff" },
-    selectors: {
-      "&:hover": { backgroundColor: "darkblue" },
-    },
-    "@media": {
-      "(min-width: 768px)": { padding: 16 },
-    },
-  });
-
-  const css = ast.renderCss({ rules });
-  assertEquals(
-    css,
-    `.button {
-  --primaryColor: #007bff;
-  padding: 8px;
-  background-color: blue;
-}
-.button:hover {
-  background-color: darkblue;
-}
-@media (min-width: 768px) {
-  .button {
-    padding: 16px;
-  }
-}`,
-  );
 });

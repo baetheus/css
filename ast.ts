@@ -9,10 +9,6 @@
  * @since 0.1.0
  */
 
-import type { Properties } from "csstype";
-
-// CSS Values
-
 /**
  * A CSS value that can be a string, number, variable reference, or fallback.
  *
@@ -374,15 +370,6 @@ export interface PropertyRule {
 }
 
 /**
- * A complete CSS document containing rules.
- *
- * @since 0.1.0
- */
-export interface CssDocument {
-  rules: readonly CssRule[];
-}
-
-/**
  * Union type of all CSS rule types.
  *
  * @since 0.1.0
@@ -397,55 +384,6 @@ export type CssRule =
   | SupportsRule
   | ContainerRule
   | PropertyRule;
-
-// Style object types (for higher-level composition)
-
-/**
- * Base style properties from csstype.
- *
- * @since 0.1.0
- */
-export type StyleProperties = Properties<string | number>;
-
-/**
- * Extended style object with nesting support for at-rules and selectors.
- *
- * @example
- * ```ts
- * import { type StyleObject } from "./ast.ts";
- *
- * const style: StyleObject = {
- *   color: "blue",
- *   fontSize: 16,
- *   vars: { "--spacing": "8px" },
- *   selectors: { "&:hover": { color: "red" } },
- *   "@media": { "(min-width: 768px)": { fontSize: 18 } },
- * };
- * ```
- *
- * @since 0.1.0
- */
-export interface StyleObject extends StyleProperties {
-  /** Set CSS variables */
-  vars?: Record<string, string | number>;
-
-  /** Nested selectors (must include & to reference element) */
-  selectors?: Record<string, StyleProperties>;
-
-  /** At-rules with nested styles */
-  "@media"?: Record<string, StyleObject>;
-  "@supports"?: Record<string, StyleObject>;
-  "@container"?: Record<string, StyleObject>;
-  "@layer"?: Record<string, StyleObject>;
-}
-
-/**
- * Array form for style composition (later styles win).
- *
- * @since 0.1.0
- */
-export type StyleInput = StyleObject | readonly StyleInput[];
-
 /**
  * Output from compiling styles, containing class name and rules.
  *
@@ -458,165 +396,9 @@ export interface CompiledStyles {
   rules: readonly CssRule[];
 }
 
-// Unitless properties
-
-/**
- * Set of CSS properties that do not require units for numeric values.
- *
- * @example
- * ```ts
- * import { UNITLESS_PROPERTIES } from "./ast.ts";
- *
- * UNITLESS_PROPERTIES.has("zIndex");      // true
- * UNITLESS_PROPERTIES.has("fontSize");    // false
- * ```
- *
- * @since 0.1.0
- */
-export const UNITLESS_PROPERTIES: ReadonlySet<string> = new Set([
-  "animationIterationCount",
-  "borderImageSlice",
-  "columnCount",
-  "columns",
-  "fillOpacity",
-  "flex",
-  "flexGrow",
-  "flexShrink",
-  "fontWeight",
-  "gridColumn",
-  "gridColumnEnd",
-  "gridColumnStart",
-  "gridRow",
-  "gridRowEnd",
-  "gridRowStart",
-  "lineHeight",
-  "opacity",
-  "order",
-  "orphans",
-  "strokeOpacity",
-  "tabSize",
-  "widows",
-  "zIndex",
-  "zoom",
-]);
-
 // Transform utilities
 
-/**
- * Convert a camelCase string to kebab-case.
- *
- * @example
- * ```ts
- * import { camelToKebab } from "./ast.ts";
- *
- * camelToKebab("backgroundColor"); // "background-color"
- * camelToKebab("zIndex");          // "z-index"
- * ```
- *
- * @since 0.1.0
- */
-export function camelToKebab(str: string): string {
-  return str.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-}
-
-/**
- * Add 'px' to numeric values for properties that require units.
- *
- * @example
- * ```ts
- * import { pixelify } from "./ast.ts";
- *
- * pixelify("fontSize", 16);    // "16px"
- * pixelify("zIndex", 10);      // "10"
- * pixelify("opacity", 0.5);    // "0.5"
- * ```
- *
- * @since 0.1.0
- */
-export function pixelify(property: string, value: string | number): string {
-  if (
-    typeof value === "number" &&
-    value !== 0 &&
-    !UNITLESS_PROPERTIES.has(property)
-  ) {
-    return `${value}px`;
-  }
-  return String(value);
-}
-
-/**
- * Transform a style object's properties to an array of CssProperty.
- *
- * @example
- * ```ts
- * import { transformProperties } from "./ast.ts";
- *
- * const props = transformProperties({
- *   color: "red",
- *   fontSize: 16,
- * });
- * // [{ name: "color", value: "red" }, { name: "font-size", value: "16px" }]
- * ```
- *
- * @since 0.1.0
- */
-export function transformProperties(obj: StyleProperties): CssProperty[] {
-  return Object.entries(obj)
-    .filter(
-      ([key]) => !key.startsWith("@") && key !== "vars" && key !== "selectors",
-    )
-    .map(([key, value]) => prop(camelToKebab(key), pixelify(key, value!)));
-}
-
 // Validation
-
-/**
- * Validate that a selector references the element with &.
- *
- * @example
- * ```ts
- * import { validateSelector } from "./ast.ts";
- *
- * validateSelector("&:hover");      // OK
- * validateSelector(".other:hover"); // throws Error
- * ```
- *
- * @since 0.1.0
- */
-export function validateSelector(selector: string): void {
-  if (!selector.includes("&")) {
-    throw new Error(
-      `Invalid selector "${selector}": must reference the element with &`,
-    );
-  }
-}
-
-/**
- * Basic validation for media query syntax.
- *
- * @example
- * ```ts
- * import { validateMediaQuery } from "./ast.ts";
- *
- * validateMediaQuery("(min-width: 768px)"); // OK
- * validateMediaQuery("screen and (color)"); // OK
- * validateMediaQuery("");                   // throws Error
- * ```
- *
- * @since 0.1.0
- */
-export function validateMediaQuery(query: string): void {
-  if (!query.trim()) {
-    throw new Error("Media query cannot be empty");
-  }
-  // Basic syntax check - must have parentheses or valid keywords
-  if (
-    !query.includes("(") &&
-    !["all", "print", "screen"].some((k) => query.includes(k))
-  ) {
-    throw new Error(`Invalid media query: ${query}`);
-  }
-}
 
 // CSS Variable utilities
 
@@ -1233,155 +1015,23 @@ export function pseudoElement(base: Selector, p: string): PseudoSelector {
 
 // Style composition
 
-/**
- * Flatten nested arrays of style inputs.
- */
-function flattenInputs(input: StyleInput): StyleObject[] {
-  if (Array.isArray(input)) {
-    return input.flatMap((item) => flattenInputs(item as StyleInput));
-  }
-  return [input as StyleObject];
-}
-
-/**
- * Deep merge style objects (later styles win).
- *
- * @example
- * ```ts
- * import { mergeStyles } from "./ast.ts";
- *
- * const merged = mergeStyles(
- *   { color: "red", padding: 8 },
- *   { color: "blue", margin: 16 },
- * );
- * // { color: "blue", padding: 8, margin: 16 }
- * ```
- *
- * @since 0.1.0
- */
-export function mergeStyles(...inputs: StyleInput[]): StyleObject {
-  const result: StyleObject = {};
-  const flattened = inputs.flatMap((input) => flattenInputs(input));
-
-  for (const input of flattened) {
-    // Save nested objects before Object.assign overwrites them
-    const prevVars = result.vars;
-    const prevSelectors = result.selectors;
-    const prevMedia = result["@media"];
-    const prevSupports = result["@supports"];
-    const prevContainer = result["@container"];
-    const prevLayer = result["@layer"];
-
-    Object.assign(result, input);
-
-    // Deep merge nested objects
-    if (prevVars || input.vars) {
-      result.vars = { ...prevVars, ...input.vars };
-    }
-    if (prevSelectors || input.selectors) {
-      result.selectors = { ...prevSelectors, ...input.selectors };
-    }
-    if (prevMedia || input["@media"]) {
-      result["@media"] = { ...prevMedia, ...input["@media"] };
-    }
-    if (prevSupports || input["@supports"]) {
-      result["@supports"] = { ...prevSupports, ...input["@supports"] };
-    }
-    if (prevContainer || input["@container"]) {
-      result["@container"] = { ...prevContainer, ...input["@container"] };
-    }
-    if (prevLayer || input["@layer"]) {
-      result["@layer"] = { ...prevLayer, ...input["@layer"] };
-    }
-  }
-  return result;
-}
-
-/**
- * Compile a style object to CSS rules for a given class name.
- *
- * @example
- * ```ts
- * import { compileStyle, renderRule } from "./ast.ts";
- *
- * const rules = compileStyle("btn", {
- *   color: "white",
- *   backgroundColor: "blue",
- *   selectors: { "&:hover": { backgroundColor: "darkblue" } },
- * });
- *
- * rules.forEach(rule => console.log(renderRule(rule)));
- * ```
- *
- * @since 0.1.0
- */
-export function compileStyle(className: string, input: StyleInput): CssRule[] {
-  const style: StyleObject = Array.isArray(input)
-    ? mergeStyles(...input)
-    : input as StyleObject;
-  const rules: CssRule[] = [];
-  const selector = cls(className);
-
-  // Base properties + vars
-  const properties = [
-    ...createVarAssignments(style.vars ?? {}),
-    ...transformProperties(style as StyleProperties),
-  ];
-  if (properties.length > 0) {
-    rules.push(styleRule(selector, properties));
-  }
-
-  // Nested selectors
-  if (style.selectors) {
-    for (const [sel, props] of Object.entries(style.selectors)) {
-      validateSelector(sel);
-      const resolvedSelector = sel.replace(/&/g, `.${className}`);
-      rules.push(
-        styleRule(
-          { type: "simple", value: resolvedSelector },
-          transformProperties(props),
-        ),
-      );
-    }
-  }
-
-  // Media queries
-  if (style["@media"]) {
-    for (const [query, nested] of Object.entries(style["@media"])) {
-      validateMediaQuery(query);
-      const nestedRules = compileStyle(className, nested);
-      rules.push(mediaRule(query, nestedRules));
-    }
-  }
-
-  // Supports queries
-  if (style["@supports"]) {
-    for (const [query, nested] of Object.entries(style["@supports"])) {
-      const nestedRules = compileStyle(className, nested);
-      rules.push(supportsRule(query, nestedRules));
-    }
-  }
-
-  // Container queries
-  if (style["@container"]) {
-    for (const [query, nested] of Object.entries(style["@container"])) {
-      const nestedRules = compileStyle(className, nested);
-      rules.push(containerRule(query, nestedRules));
-    }
-  }
-
-  // Layers
-  if (style["@layer"]) {
-    for (const [name, nested] of Object.entries(style["@layer"])) {
-      const nestedRules = compileStyle(className, nested);
-      rules.push(layerRule(name, nestedRules));
-    }
-  }
-
-  return rules;
-}
-
 // Rendering
+/**
+ * Convert a camelCase string to kebab-case.
+ *
+ * @example
+ * ```ts
+ * import { camelToKebab } from "./ast.ts";
+ *
+ * camelToKebab("backgroundColor"); // "background-color"
+ * camelToKebab("zIndex");          // "z-index"
+ * ```
+ *
+ * @since 0.1.0
+ */
+export function camelToKebab(str: string): string {
+  return str.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+}
 
 /**
  * Options for rendering CSS.
@@ -1631,11 +1281,11 @@ export function renderRule(
  * @since 0.1.0
  */
 export function renderCss(
-  document: CssDocument,
+  rules: readonly CssRule[],
   options?: Partial<RenderOptions>,
 ): string {
   const opts = resolveOptions(options);
-  return document.rules
+  return rules
     .map((rule) => renderRule(rule, options, 0))
     .join(opts.newline);
 }

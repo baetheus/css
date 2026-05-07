@@ -10,6 +10,8 @@
  * @since 0.1.0
  */
 
+import type { Properties } from "csstype";
+
 import type {
   CssProperty,
   CssRule,
@@ -19,25 +21,345 @@ import type {
   LayerRule,
   LayerStatementRule,
   RenderOptions,
-  StyleInput,
-  StyleObject,
 } from "./ast.ts";
-import {
-  cls,
-  compileStyle,
-  createVarAssignments,
-  mediaRule,
-  mergeStyles,
-  prop,
-  renderCss,
-  resolveOptions,
-  styleRule,
-  transformProperties,
-} from "./ast.ts";
+import * as ast from "./ast.ts";
 
 // Unexported symbol for type branding
 const CSS_REF_BRAND: unique symbol = Symbol("CSSRef");
 
+/**
+ * Set of CSS properties that do not require units for numeric values.
+ *
+ * @example
+ * ```ts
+ * import { UNITLESS_PROPERTIES } from "./ast.ts";
+ *
+ * UNITLESS_PROPERTIES.has("zIndex");      // true
+ * UNITLESS_PROPERTIES.has("fontSize");    // false
+ * ```
+ *
+ * @since 0.1.0
+ */
+export const UNITLESS_PROPERTIES: ReadonlySet<string> = new Set([
+  "animationIterationCount",
+  "borderImageSlice",
+  "columnCount",
+  "columns",
+  "fillOpacity",
+  "flex",
+  "flexGrow",
+  "flexShrink",
+  "fontWeight",
+  "gridColumn",
+  "gridColumnEnd",
+  "gridColumnStart",
+  "gridRow",
+  "gridRowEnd",
+  "gridRowStart",
+  "lineHeight",
+  "opacity",
+  "order",
+  "orphans",
+  "strokeOpacity",
+  "tabSize",
+  "widows",
+  "zIndex",
+  "zoom",
+]);
+// Style object types (for higher-level composition)
+
+/**
+ * Base style properties from csstype.
+ *
+ * @since 0.1.0
+ */
+export type StyleProperties = Properties<string | number>;
+
+/**
+ * Extended style object with nesting support for at-rules and selectors.
+ *
+ * @example
+ * ```ts
+ * import { type StyleObject } from "./ast.ts";
+ *
+ * const style: StyleObject = {
+ *   color: "blue",
+ *   fontSize: 16,
+ *   vars: { "--spacing": "8px" },
+ *   selectors: { "&:hover": { color: "red" } },
+ *   "@media": { "(min-width: 768px)": { fontSize: 18 } },
+ * };
+ * ```
+ *
+ * @since 0.1.0
+ */
+export interface StyleObject extends StyleProperties {
+  /** Set CSS variables */
+  vars?: Record<string, string | number>;
+
+  /** Nested selectors (must include & to reference element) */
+  selectors?: Record<string, StyleProperties>;
+
+  /** At-rules with nested styles */
+  "@media"?: Record<string, StyleObject>;
+  "@supports"?: Record<string, StyleObject>;
+  "@container"?: Record<string, StyleObject>;
+  "@layer"?: Record<string, StyleObject>;
+}
+
+/**
+ * Array form for style composition (later styles win).
+ *
+ * @since 0.1.0
+ */
+export type StyleInput = StyleObject | readonly StyleInput[];
+
+/**
+ * Add 'px' to numeric values for properties that require units.
+ *
+ * @example
+ * ```ts
+ * import { pixelify } from "./ast.ts";
+ *
+ * pixelify("fontSize", 16);    // "16px"
+ * pixelify("zIndex", 10);      // "10"
+ * pixelify("opacity", 0.5);    // "0.5"
+ * ```
+ *
+ * @since 0.1.0
+ */
+export function pixelify(property: string, value: string | number): string {
+  if (
+    typeof value === "number" &&
+    value !== 0 &&
+    !UNITLESS_PROPERTIES.has(property)
+  ) {
+    return `${value}px`;
+  }
+  return String(value);
+}
+
+/**
+ * Transform a style object's properties to an array of CssProperty.
+ *
+ * @example
+ * ```ts
+ * import { transformProperties } from "./ast.ts";
+ *
+ * const props = transformProperties({
+ *   color: "red",
+ *   fontSize: 16,
+ * });
+ * // [{ name: "color", value: "red" }, { name: "font-size", value: "16px" }]
+ * ```
+ *
+ * @since 0.1.0
+ */
+export function transformProperties(obj: StyleProperties): CssProperty[] {
+  return Object.entries(obj)
+    .filter(
+      ([key]) => !key.startsWith("@") && key !== "vars" && key !== "selectors",
+    )
+    .map(([key, value]) =>
+      ast.prop(ast.camelToKebab(key), pixelify(key, value!))
+    );
+}
+
+/**
+ * Flatten nested arrays of style inputs.
+ */
+function flattenInputs(input: StyleInput): StyleObject[] {
+  if (Array.isArray(input)) {
+    return input.flatMap((item) => flattenInputs(item as StyleInput));
+  }
+  return [input as StyleObject];
+}
+
+/**
+ * Deep merge style objects (later styles win).
+ *
+ * @example
+ * ```ts
+ * import { mergeStyles } from "./ast.ts";
+ *
+ * const merged = mergeStyles(
+ *   { color: "red", padding: 8 },
+ *   { color: "blue", margin: 16 },
+ * );
+ * // { color: "blue", padding: 8, margin: 16 }
+ * ```
+ *
+ * @since 0.1.0
+ */
+export function mergeStyles(...inputs: StyleInput[]): StyleObject {
+  const result: StyleObject = {};
+  const flattened = inputs.flatMap((input) => flattenInputs(input));
+
+  for (const input of flattened) {
+    // Save nested objects before Object.assign overwrites them
+    const prevVars = result.vars;
+    const prevSelectors = result.selectors;
+    const prevMedia = result["@media"];
+    const prevSupports = result["@supports"];
+    const prevContainer = result["@container"];
+    const prevLayer = result["@layer"];
+
+    Object.assign(result, input);
+
+    // Deep merge nested objects
+    if (prevVars || input.vars) {
+      result.vars = { ...prevVars, ...input.vars };
+    }
+    if (prevSelectors || input.selectors) {
+      result.selectors = { ...prevSelectors, ...input.selectors };
+    }
+    if (prevMedia || input["@media"]) {
+      result["@media"] = { ...prevMedia, ...input["@media"] };
+    }
+    if (prevSupports || input["@supports"]) {
+      result["@supports"] = { ...prevSupports, ...input["@supports"] };
+    }
+    if (prevContainer || input["@container"]) {
+      result["@container"] = { ...prevContainer, ...input["@container"] };
+    }
+    if (prevLayer || input["@layer"]) {
+      result["@layer"] = { ...prevLayer, ...input["@layer"] };
+    }
+  }
+  return result;
+}
+
+/**
+ * Validate that a selector references the element with &.
+ *
+ * @example
+ * ```ts
+ * import { validateSelector } from "./ast.ts";
+ *
+ * validateSelector("&:hover");      // OK
+ * validateSelector(".other:hover"); // throws Error
+ * ```
+ *
+ * @since 0.1.0
+ */
+export function validateSelector(selector: string): void {
+  if (!selector.includes("&")) {
+    throw new Error(
+      `Invalid selector "${selector}": must reference the element with &`,
+    );
+  }
+}
+
+/**
+ * Basic validation for media query syntax.
+ *
+ * @example
+ * ```ts
+ * import { validateMediaQuery } from "./ast.ts";
+ *
+ * validateMediaQuery("(min-width: 768px)"); // OK
+ * validateMediaQuery("screen and (color)"); // OK
+ * validateMediaQuery("");                   // throws Error
+ * ```
+ *
+ * @since 0.1.0
+ */
+export function validateMediaQuery(query: string): void {
+  if (!query.trim()) {
+    throw new Error("Media query cannot be empty");
+  }
+  // Basic syntax check - must have parentheses or valid keywords
+  if (
+    !query.includes("(") &&
+    !["all", "print", "screen"].some((k) => query.includes(k))
+  ) {
+    throw new Error(`Invalid media query: ${query}`);
+  }
+}
+
+/**
+ * Compile a style object to CSS rules for a given class name.
+ *
+ * @example
+ * ```ts
+ * import { compileStyle, renderRule } from "./ast.ts";
+ *
+ * const rules = compileStyle("btn", {
+ *   color: "white",
+ *   backgroundColor: "blue",
+ *   selectors: { "&:hover": { backgroundColor: "darkblue" } },
+ * });
+ *
+ * rules.forEach(rule => console.log(renderRule(rule)));
+ * ```
+ *
+ * @since 0.1.0
+ */
+export function compileStyle(className: string, input: StyleInput): CssRule[] {
+  const style: StyleObject = Array.isArray(input)
+    ? mergeStyles(...input)
+    : input as StyleObject;
+  const rules: CssRule[] = [];
+  const selector = ast.cls(className);
+
+  // Base properties + vars
+  const properties = [
+    ...ast.createVarAssignments(style.vars ?? {}),
+    ...transformProperties(style as StyleProperties),
+  ];
+  if (properties.length > 0) {
+    rules.push(ast.styleRule(selector, properties));
+  }
+
+  // Nested selectors
+  if (style.selectors) {
+    for (const [sel, props] of Object.entries(style.selectors)) {
+      validateSelector(sel);
+      const resolvedSelector = sel.replace(/&/g, `.${className}`);
+      rules.push(
+        ast.styleRule(
+          { type: "simple", value: resolvedSelector },
+          transformProperties(props),
+        ),
+      );
+    }
+  }
+
+  // Media queries
+  if (style["@media"]) {
+    for (const [query, nested] of Object.entries(style["@media"])) {
+      validateMediaQuery(query);
+      const nestedRules = compileStyle(className, nested);
+      rules.push(ast.mediaRule(query, nestedRules));
+    }
+  }
+
+  // Supports queries
+  if (style["@supports"]) {
+    for (const [query, nested] of Object.entries(style["@supports"])) {
+      const nestedRules = compileStyle(className, nested);
+      rules.push(ast.supportsRule(query, nestedRules));
+    }
+  }
+
+  // Container queries
+  if (style["@container"]) {
+    for (const [query, nested] of Object.entries(style["@container"])) {
+      const nestedRules = compileStyle(className, nested);
+      rules.push(ast.containerRule(query, nestedRules));
+    }
+  }
+
+  // Layers
+  if (style["@layer"]) {
+    for (const [name, nested] of Object.entries(style["@layer"])) {
+      const nestedRules = compileStyle(className, nested);
+      rules.push(ast.layerRule(name, nestedRules));
+    }
+  }
+
+  return rules;
+}
 /**
  * Base class for all CSS references.
  *
@@ -74,7 +396,7 @@ export abstract class CSSRef {
 
   /** Render CSS for just this reference */
   render(options?: Partial<RenderOptions>): string {
-    return renderCss({ rules: [...this.getRules()] }, options);
+    return ast.renderCss(this.getRules(), options);
   }
 }
 
@@ -715,12 +1037,12 @@ export function globalStyle(
   const rules: CssRule[] = [];
 
   const properties = [
-    ...createVarAssignments(styleObj.vars ?? {}),
+    ...ast.createVarAssignments(styleObj.vars ?? {}),
     ...transformProperties(styleObj),
   ];
 
   if (properties.length > 0) {
-    const rule = styleRule({ type: "simple", value: selector }, properties);
+    const rule = ast.styleRule({ type: "simple", value: selector }, properties);
     rules.push(rule);
   }
 
@@ -731,15 +1053,15 @@ export function globalStyle(
         ? mergeStyles(...nested)
         : nested;
       const nestedProps = [
-        ...createVarAssignments(nestedStyle.vars ?? {}),
+        ...ast.createVarAssignments(nestedStyle.vars ?? {}),
         ...transformProperties(nestedStyle),
       ];
       if (nestedProps.length > 0) {
-        const nestedRule = styleRule(
+        const nestedRule = ast.styleRule(
           { type: "simple", value: selector },
           nestedProps,
         );
-        rules.push(mediaRule(query, [nestedRule]));
+        rules.push(ast.mediaRule(query, [nestedRule]));
       }
     }
   }
@@ -932,8 +1254,8 @@ export function vars<T extends VarTokens>(
 ): VarsRef {
   const varAssignments = walkValues(contract, values);
   const className = generateClassName(varAssignments, debugName);
-  const properties = createVarAssignments(varAssignments);
-  const rule = styleRule(cls(className), properties);
+  const properties = ast.createVarAssignments(varAssignments);
+  const rule = ast.styleRule(ast.cls(className), properties);
   return new VarsRef(className, [rule]);
 }
 
@@ -1066,8 +1388,8 @@ export function fontFace(
   const family = options.fontFamily ?? debugName ?? hashStyle(options);
 
   const properties: CssProperty[] = [
-    prop("font-family", `"${family}"`),
-    prop(
+    ast.prop("font-family", `"${family}"`),
+    ast.prop(
       "src",
       Array.isArray(options.src) ? options.src.join(", ") : options.src,
     ),
@@ -1077,19 +1399,19 @@ export function fontFace(
     const weight = Array.isArray(options.fontWeight)
       ? options.fontWeight.join(" ")
       : String(options.fontWeight);
-    properties.push(prop("font-weight", weight));
+    properties.push(ast.prop("font-weight", weight));
   }
   if (options.fontStyle) {
-    properties.push(prop("font-style", options.fontStyle));
+    properties.push(ast.prop("font-style", options.fontStyle));
   }
   if (options.fontDisplay) {
-    properties.push(prop("font-display", options.fontDisplay));
+    properties.push(ast.prop("font-display", options.fontDisplay));
   }
   if (options.fontStretch) {
-    properties.push(prop("font-stretch", options.fontStretch));
+    properties.push(ast.prop("font-stretch", options.fontStretch));
   }
   if (options.unicodeRange) {
-    properties.push(prop("unicode-range", options.unicodeRange));
+    properties.push(ast.prop("unicode-range", options.unicodeRange));
   }
 
   const rule: FontFaceRule = {
@@ -1251,8 +1573,6 @@ export function recipe<V extends VariantDefinitions>(
   );
 }
 
-// Render
-
 /**
  * Render CSS from an array of CSSRefs, deduplicating by object identity.
  *
@@ -1278,7 +1598,7 @@ export function render(
   refs: CSSRef[],
   options?: Partial<RenderOptions>,
 ): string {
-  const _options = resolveOptions(options);
+  const _options = ast.resolveOptions(options);
 
   // Collect rules, deduplicating by object identity
   const rules = new Set<CssRule>();
@@ -1289,5 +1609,5 @@ export function render(
     }
   }
 
-  return renderCss({ rules: Array.from(rules) }, _options);
+  return ast.renderCss(Array.from(rules), _options);
 }

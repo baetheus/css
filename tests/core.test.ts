@@ -1,4 +1,4 @@
-import { assertEquals, assertNotEquals } from "jsr:@std/assert";
+import { assertEquals, assertNotEquals, assertThrows } from "@std/assert";
 import * as core from "../core.ts";
 
 // Helper to reset config between tests
@@ -859,4 +859,391 @@ Deno.test("full integration: recipe with all options", () => {
   const css = buttonRecipe.render();
   assertEquals(css.includes("padding"), true);
   assertEquals(css.includes("background-color"), true);
+});
+
+// Transform tests
+
+Deno.test("pixelify adds px to numbers for dimensional properties", () => {
+  assertEquals(core.pixelify("padding", 10), "10px");
+  assertEquals(core.pixelify("margin", 20), "20px");
+  assertEquals(core.pixelify("width", 100), "100px");
+  assertEquals(core.pixelify("fontSize", 16), "16px");
+});
+
+Deno.test("pixelify does not add px to zero", () => {
+  assertEquals(core.pixelify("padding", 0), "0");
+  assertEquals(core.pixelify("margin", 0), "0");
+});
+
+Deno.test("pixelify does not add px to unitless properties", () => {
+  assertEquals(core.pixelify("opacity", 0.5), "0.5");
+  assertEquals(core.pixelify("zIndex", 10), "10");
+  assertEquals(core.pixelify("fontWeight", 700), "700");
+  assertEquals(core.pixelify("flexGrow", 1), "1");
+  assertEquals(core.pixelify("lineHeight", 1.5), "1.5");
+});
+
+Deno.test("pixelify passes through strings unchanged", () => {
+  assertEquals(core.pixelify("padding", "10px"), "10px");
+  assertEquals(core.pixelify("color", "red"), "red");
+  assertEquals(core.pixelify("background", "url(image.png)"), "url(image.png)");
+});
+
+Deno.test("transformProperties converts full style object", () => {
+  const result = core.transformProperties({
+    backgroundColor: "blue",
+    padding: 10,
+    opacity: 0.5,
+  });
+
+  assertEquals(result.length, 3);
+  assertEquals(result[0], { name: "background-color", value: "blue" });
+  assertEquals(result[1], { name: "padding", value: "10px" });
+  assertEquals(result[2], { name: "opacity", value: "0.5" });
+});
+
+Deno.test("transformProperties filters out vars and selectors", () => {
+  const result = core.transformProperties({
+    color: "red",
+    vars: { primaryColor: "blue" },
+    selectors: { "&:hover": { color: "green" } },
+  } as Record<string, unknown>);
+
+  assertEquals(result.length, 1);
+  assertEquals(result[0], { name: "color", value: "red" });
+});
+
+Deno.test("transformProperties filters out @-rules", () => {
+  const result = core.transformProperties({
+    color: "red",
+    "@media": { "(min-width: 768px)": { color: "blue" } },
+  } as Record<string, unknown>);
+
+  assertEquals(result.length, 1);
+  assertEquals(result[0], { name: "color", value: "red" });
+});
+
+// Compile tests
+
+Deno.test("compileStyle creates simple StyleRule", () => {
+  const rules = core.compileStyle("button", {
+    color: "blue",
+    padding: 10,
+  });
+
+  assertEquals(rules.length, 1);
+  assertEquals(rules[0].type, "style");
+
+  const css = core.render([new core.StyleRef("button", rules)]);
+  assertEquals(
+    css,
+    `.button {
+  color: blue;
+  padding: 10px;
+}`,
+  );
+});
+
+Deno.test("compileStyle handles CSS variables in vars", () => {
+  const rules = core.compileStyle("button", {
+    vars: { primaryColor: "#007bff", spacing: "8px" },
+    color: "red",
+  });
+
+  const css = core.render([new core.StyleRef("button", rules)]);
+  assertEquals(
+    css,
+    `.button {
+  --primaryColor: #007bff;
+  --spacing: 8px;
+  color: red;
+}`,
+  );
+});
+
+Deno.test("compileStyle handles nested selectors with &", () => {
+  const rules = core.compileStyle("button", {
+    color: "blue",
+    selectors: {
+      "&:hover": { color: "darkblue" },
+      "&:active": { color: "navy" },
+    },
+  });
+
+  assertEquals(rules.length, 3);
+
+  const css = core.render([new core.StyleRef("button", rules)]);
+  assertEquals(
+    css,
+    `.button {
+  color: blue;
+}
+.button:hover {
+  color: darkblue;
+}
+.button:active {
+  color: navy;
+}`,
+  );
+});
+
+Deno.test("compileStyle handles complex nested selectors", () => {
+  const rules = core.compileStyle("card", {
+    padding: 16,
+    selectors: {
+      "& .title": { fontSize: 20 },
+      "&:hover .icon": { opacity: 1 },
+    },
+  });
+
+  const css = core.render([new core.StyleRef("card", rules)]);
+  assertEquals(
+    css,
+    `.card {
+  padding: 16px;
+}
+.card .title {
+  font-size: 20px;
+}
+.card:hover .icon {
+  opacity: 1;
+}`,
+  );
+});
+
+Deno.test("compileStyle handles media queries", () => {
+  const rules = core.compileStyle("button", {
+    padding: 8,
+    "@media": {
+      "(min-width: 768px)": { padding: 16 },
+    },
+  });
+
+  const css = core.render([new core.StyleRef("button", rules)]);
+  assertEquals(
+    css,
+    `.button {
+  padding: 8px;
+}
+@media (min-width: 768px) {
+  .button {
+    padding: 16px;
+  }
+}`,
+  );
+});
+
+Deno.test("compileStyle handles supports queries", () => {
+  const rules = core.compileStyle("grid", {
+    display: "block",
+    "@supports": {
+      "(display: grid)": { display: "grid" },
+    },
+  });
+
+  const css = core.render([new core.StyleRef("grid", rules)]);
+  assertEquals(
+    css,
+    `.grid {
+  display: block;
+}
+@supports (display: grid) {
+  .grid {
+    display: grid;
+  }
+}`,
+  );
+});
+
+Deno.test("compileStyle handles container queries", () => {
+  const rules = core.compileStyle("card", {
+    padding: 8,
+    "@container": {
+      "(min-width: 300px)": { padding: 16 },
+    },
+  });
+
+  const css = core.render([new core.StyleRef("card", rules)]);
+  assertEquals(
+    css,
+    `.card {
+  padding: 8px;
+}
+@container (min-width: 300px) {
+  .card {
+    padding: 16px;
+  }
+}`,
+  );
+});
+
+Deno.test("compileStyle handles layers", () => {
+  const rules = core.compileStyle("button", {
+    color: "blue",
+    "@layer": {
+      utilities: { display: "flex" },
+    },
+  });
+
+  const css = core.render([new core.StyleRef("button", rules)]);
+  assertEquals(
+    css,
+    `.button {
+  color: blue;
+}
+@layer utilities {
+  .button {
+    display: flex;
+  }
+}`,
+  );
+});
+
+Deno.test("compileStyle handles multiple at-rules", () => {
+  const rules = core.compileStyle("button", {
+    padding: 8,
+    "@media": {
+      "(min-width: 768px)": { padding: 16 },
+      "(min-width: 1024px)": { padding: 24 },
+    },
+  });
+
+  assertEquals(rules.length, 3);
+  assertEquals(rules[0].type, "style");
+  assertEquals(rules[1].type, "media");
+  assertEquals(rules[2].type, "media");
+});
+
+Deno.test("mergeStyles merges simple properties (later wins)", () => {
+  const result = core.mergeStyles(
+    { color: "red", padding: 10 },
+    { color: "blue", margin: 20 },
+  );
+
+  assertEquals(result.color, "blue");
+  assertEquals(result.padding, 10);
+  assertEquals(result.margin, 20);
+});
+
+Deno.test("mergeStyles deep merges vars", () => {
+  const result = core.mergeStyles(
+    { vars: { primary: "red", secondary: "green" } },
+    { vars: { primary: "blue" } },
+  );
+
+  assertEquals(result.vars, { primary: "blue", secondary: "green" });
+});
+
+Deno.test("mergeStyles deep merges selectors", () => {
+  const result = core.mergeStyles(
+    { selectors: { "&:hover": { color: "red" } } },
+    { selectors: { "&:active": { color: "blue" } } },
+  );
+
+  assertEquals(result.selectors, {
+    "&:hover": { color: "red" },
+    "&:active": { color: "blue" },
+  });
+});
+
+Deno.test("mergeStyles deep merges @media", () => {
+  const result = core.mergeStyles(
+    { "@media": { "(min-width: 768px)": { padding: 16 } } },
+    { "@media": { "(min-width: 1024px)": { padding: 24 } } },
+  );
+
+  assertEquals(result["@media"], {
+    "(min-width: 768px)": { padding: 16 },
+    "(min-width: 1024px)": { padding: 24 },
+  });
+});
+
+Deno.test("compileStyle handles array input (composition)", () => {
+  const base = { color: "red", padding: 8 };
+  const override = { color: "blue" };
+
+  const rules = core.compileStyle("button", [base, override]);
+  const css = core.render([new core.StyleRef("button", rules)]);
+
+  assertEquals(
+    css,
+    `.button {
+  color: blue;
+  padding: 8px;
+}`,
+  );
+});
+
+Deno.test("compileStyle handles nested arrays", () => {
+  const a = { color: "red" };
+  const b = { padding: 8 };
+  const c = { margin: 16 };
+
+  const rules = core.compileStyle("button", [[a, b], c]);
+  const css = core.render([new core.StyleRef("button", rules)]);
+
+  assertEquals(
+    css,
+    `.button {
+  color: red;
+  padding: 8px;
+  margin: 16px;
+}`,
+  );
+});
+
+Deno.test("validateSelector throws for selectors without &", () => {
+  assertThrows(
+    () => core.validateSelector(".other"),
+    Error,
+    "must reference the element with &",
+  );
+});
+
+Deno.test("compileStyle throws for invalid nested selector", () => {
+  assertThrows(
+    () =>
+      core.compileStyle("button", {
+        selectors: { ".invalid": { color: "red" } },
+      }),
+    Error,
+    "must reference the element with &",
+  );
+});
+
+Deno.test("compileStyle creates no rules for empty style", () => {
+  const rules = core.compileStyle("empty", {});
+  assertEquals(rules.length, 0);
+});
+
+Deno.test("full example from phase-2 spec", () => {
+  const rules = core.compileStyle("button", {
+    padding: 8,
+    backgroundColor: "blue",
+    vars: { primaryColor: "#007bff" },
+    selectors: {
+      "&:hover": { backgroundColor: "darkblue" },
+    },
+    "@media": {
+      "(min-width: 768px)": { padding: 16 },
+    },
+  });
+
+  const css = core.render([new core.StyleRef("button", rules)]);
+  assertEquals(
+    css,
+    `.button {
+  --primaryColor: #007bff;
+  padding: 8px;
+  background-color: blue;
+}
+.button:hover {
+  background-color: darkblue;
+}
+@media (min-width: 768px) {
+  .button {
+    padding: 16px;
+  }
+}`,
+  );
 });
