@@ -1,6 +1,7 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@baetheus/fun@^3.0.0-rc.8": "3.0.0-rc.8",
     "jsr:@std/assert@*": "1.0.19",
     "jsr:@std/assert@1": "1.0.19",
     "jsr:@std/internal@^1.0.12": "1.0.12",
@@ -8,6 +9,9 @@
     "npm:csstype@^3.2.3": "3.2.3"
   },
   "jsr": {
+    "@baetheus/fun@3.0.0-rc.8": {
+      "integrity": "d84c6f3d403bd91c397c55a5736b1ea39e9054f7a8b0fa689a01743d3657b1ea"
+    },
     "@std/assert@1.0.19": {
       "integrity": "eaada96ee120cb980bc47e040f82814d786fe8162ecc53c91d8df60b8755991e",
       "dependencies": [
@@ -25,6 +29,7 @@
   },
   "workspace": {
     "dependencies": [
+      "jsr:@baetheus/fun@^3.0.0-rc.8",
       "jsr:@std/assert@1",
       "npm:csstype@^3.2.3"
     ]
