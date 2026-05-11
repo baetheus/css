@@ -8,7 +8,7 @@
  * @module
  */
 
-import { CSSRef, createVars, globalStyle, render, style } from "../core.ts";
+import { createVars, CSSRef, globalStyle, render, style } from "../core.ts";
 
 // =============================================================================
 // CSS Variable Contract
@@ -300,7 +300,7 @@ const lightThemeVars: Record<string, string> = {
 
   // Loading
   "--loadingSpinner":
-    'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\'%3E%3Cpath fill=\'none\' stroke=\'%230172ad\' stroke-linecap=\'round\' stroke-width=\'2\' d=\'M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83\'/%3E%3C/svg%3E")',
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%230172ad' stroke-linecap='round' stroke-width='2' d='M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83'/%3E%3C/svg%3E\")",
 
   // Tooltip
   "--tooltipBackground": "#181c25",
@@ -323,23 +323,23 @@ const lightThemeVars: Record<string, string> = {
 
   // Icons
   "--iconCheckbox":
-    'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23fff\' stroke-width=\'4\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'20 6 9 17 4 12\'%3E%3C/polyline%3E%3C/svg%3E")',
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E\")",
   "--iconChevron":
-    'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23646b79\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E")',
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23646b79' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",
   "--iconClose":
-    'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23646b79\' stroke-width=\'3\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cline x1=\'18\' y1=\'6\' x2=\'6\' y2=\'18\'%3E%3C/line%3E%3Cline x1=\'6\' y1=\'6\' x2=\'18\' y2=\'18\'%3E%3C/line%3E%3C/svg%3E")',
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23646b79' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'%3E%3C/line%3E%3Cline x1='6' y1='6' x2='18' y2='18'%3E%3C/line%3E%3C/svg%3E\")",
   "--iconDate":
-    'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23646b79\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Crect x=\'3\' y=\'4\' width=\'18\' height=\'18\' rx=\'2\' ry=\'2\'%3E%3C/rect%3E%3Cline x1=\'16\' y1=\'2\' x2=\'16\' y2=\'6\'%3E%3C/line%3E%3Cline x1=\'8\' y1=\'2\' x2=\'8\' y2=\'6\'%3E%3C/line%3E%3Cline x1=\'3\' y1=\'10\' x2=\'21\' y2=\'10\'%3E%3C/line%3E%3C/svg%3E")',
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23646b79' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E\")",
   "--iconInvalid":
-    'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23c62828\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Ccircle cx=\'12\' cy=\'12\' r=\'10\'%3E%3C/circle%3E%3Cline x1=\'12\' y1=\'8\' x2=\'12\' y2=\'12\'%3E%3C/line%3E%3Cline x1=\'12\' y1=\'16\' x2=\'12.01\' y2=\'16\'%3E%3C/line%3E%3C/svg%3E")',
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23c62828' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cline x1='12' y1='8' x2='12' y2='12'%3E%3C/line%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'%3E%3C/line%3E%3C/svg%3E\")",
   "--iconMinus":
-    'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23fff\' stroke-width=\'4\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cline x1=\'5\' y1=\'12\' x2=\'19\' y2=\'12\'%3E%3C/line%3E%3C/svg%3E")',
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='5' y1='12' x2='19' y2='12'%3E%3C/line%3E%3C/svg%3E\")",
   "--iconSearch":
-    'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23646b79\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Ccircle cx=\'11\' cy=\'11\' r=\'8\'%3E%3C/circle%3E%3Cline x1=\'21\' y1=\'21\' x2=\'16.65\' y2=\'16.65\'%3E%3C/line%3E%3C/svg%3E")',
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23646b79' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E\")",
   "--iconTime":
-    'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23646b79\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Ccircle cx=\'12\' cy=\'12\' r=\'10\'%3E%3C/circle%3E%3Cpolyline points=\'12 6 12 12 16 14\'%3E%3C/polyline%3E%3C/svg%3E")',
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23646b79' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cpolyline points='12 6 12 12 16 14'%3E%3C/polyline%3E%3C/svg%3E\")",
   "--iconValid":
-    'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23298339\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'20 6 9 17 4 12\'%3E%3C/polyline%3E%3C/svg%3E")',
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23298339' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E\")",
 };
 
 // =============================================================================
@@ -438,7 +438,7 @@ const darkThemeVars: Record<string, string> = {
 
   // Loading
   "--loadingSpinner":
-    'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\'%3E%3Cpath fill=\'none\' stroke=\'%2301aaff\' stroke-linecap=\'round\' stroke-width=\'2\' d=\'M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83\'/%3E%3C/svg%3E")',
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%2301aaff' stroke-linecap='round' stroke-width='2' d='M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83'/%3E%3C/svg%3E\")",
 
   // Tooltip
   "--tooltipBackground": "#e9eaec",
@@ -460,19 +460,19 @@ const darkThemeVars: Record<string, string> = {
 
   // Icons (updated colors for dark mode)
   "--iconChevron":
-    'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%237b8495\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E")',
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%237b8495' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",
   "--iconClose":
-    'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%237b8495\' stroke-width=\'3\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cline x1=\'18\' y1=\'6\' x2=\'6\' y2=\'18\'%3E%3C/line%3E%3Cline x1=\'6\' y1=\'6\' x2=\'18\' y2=\'18\'%3E%3C/line%3E%3C/svg%3E")',
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%237b8495' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'%3E%3C/line%3E%3Cline x1='6' y1='6' x2='18' y2='18'%3E%3C/line%3E%3C/svg%3E\")",
   "--iconDate":
-    'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%237b8495\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Crect x=\'3\' y=\'4\' width=\'18\' height=\'18\' rx=\'2\' ry=\'2\'%3E%3C/rect%3E%3Cline x1=\'16\' y1=\'2\' x2=\'16\' y2=\'6\'%3E%3C/line%3E%3Cline x1=\'8\' y1=\'2\' x2=\'8\' y2=\'6\'%3E%3C/line%3E%3Cline x1=\'3\' y1=\'10\' x2=\'21\' y2=\'10\'%3E%3C/line%3E%3C/svg%3E")',
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%237b8495' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E\")",
   "--iconInvalid":
-    'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23ef5350\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Ccircle cx=\'12\' cy=\'12\' r=\'10\'%3E%3C/circle%3E%3Cline x1=\'12\' y1=\'8\' x2=\'12\' y2=\'12\'%3E%3C/line%3E%3Cline x1=\'12\' y1=\'16\' x2=\'12.01\' y2=\'16\'%3E%3C/line%3E%3C/svg%3E")',
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ef5350' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cline x1='12' y1='8' x2='12' y2='12'%3E%3C/line%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'%3E%3C/line%3E%3C/svg%3E\")",
   "--iconSearch":
-    'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%237b8495\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Ccircle cx=\'11\' cy=\'11\' r=\'8\'%3E%3C/circle%3E%3Cline x1=\'21\' y1=\'21\' x2=\'16.65\' y2=\'16.65\'%3E%3C/line%3E%3C/svg%3E")',
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%237b8495' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E\")",
   "--iconTime":
-    'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%237b8495\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Ccircle cx=\'12\' cy=\'12\' r=\'10\'%3E%3C/circle%3E%3Cpolyline points=\'12 6 12 12 16 14\'%3E%3C/polyline%3E%3C/svg%3E")',
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%237b8495' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cpolyline points='12 6 12 12 16 14'%3E%3C/polyline%3E%3C/svg%3E\")",
   "--iconValid":
-    'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%234caf50\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'20 6 9 17 4 12\'%3E%3C/polyline%3E%3C/svg%3E")',
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%234caf50' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E\")",
 };
 
 // =============================================================================
@@ -864,9 +864,12 @@ const tfootStyle = globalStyle("tfoot th, tfoot td", {
   borderTop: `${picoVars.borderWidth} solid ${picoVars.tableBorderColor}`,
 });
 
-const tableStriped = globalStyle("table:where(.striped) tbody tr:nth-child(odd)", {
-  backgroundColor: picoVars.tableRowStripeBackground,
-});
+const tableStriped = globalStyle(
+  "table:where(.striped) tbody tr:nth-child(odd)",
+  {
+    backgroundColor: picoVars.tableRowStripeBackground,
+  },
+);
 
 // =============================================================================
 // Forms - Containers
@@ -909,7 +912,8 @@ const inputStyle = globalStyle(inputSelectors, {
   appearance: "none",
   width: "100%",
   margin: 0,
-  padding: `${picoVars.formElementSpacingVertical} ${picoVars.formElementSpacingHorizontal}`,
+  padding:
+    `${picoVars.formElementSpacingVertical} ${picoVars.formElementSpacingHorizontal}`,
   fontFamily: "inherit",
   fontSize: "1rem",
   fontWeight: picoVars.fontWeight,
@@ -919,7 +923,8 @@ const inputStyle = globalStyle(inputSelectors, {
   border: `${picoVars.borderWidth} solid ${picoVars.formElementBorderColor}`,
   borderRadius: picoVars.borderRadius,
   outline: "none",
-  transition: `border-color ${picoVars.transition}, box-shadow ${picoVars.transition}`,
+  transition:
+    `border-color ${picoVars.transition}, box-shadow ${picoVars.transition}`,
   selectors: {
     "&::placeholder": {
       color: picoVars.formElementPlaceholder,
@@ -1025,7 +1030,8 @@ const checkboxRadioStyle = globalStyle(
     backgroundColor: picoVars.formElementBackground,
     verticalAlign: "top",
     cursor: "pointer",
-    transition: `background-color ${picoVars.transition}, border-color ${picoVars.transition}`,
+    transition:
+      `background-color ${picoVars.transition}, border-color ${picoVars.transition}`,
     selectors: {
       "&:checked": {
         backgroundColor: picoVars.primary,
@@ -1170,7 +1176,8 @@ const buttonStyle = globalStyle(buttonSelectors, {
   justifyContent: "center",
   width: "auto",
   margin: 0,
-  padding: `${picoVars.formElementSpacingVertical} ${picoVars.formElementSpacingHorizontal}`,
+  padding:
+    `${picoVars.formElementSpacingVertical} ${picoVars.formElementSpacingHorizontal}`,
   fontFamily: "inherit",
   fontSize: "1rem",
   fontWeight: 700,
@@ -1183,7 +1190,8 @@ const buttonStyle = globalStyle(buttonSelectors, {
   borderRadius: picoVars.borderRadius,
   cursor: "pointer",
   outline: "none",
-  transition: `background-color ${picoVars.transition}, border-color ${picoVars.transition}, color ${picoVars.transition}`,
+  transition:
+    `background-color ${picoVars.transition}, border-color ${picoVars.transition}, color ${picoVars.transition}`,
   selectors: {
     "&:hover": {
       backgroundColor: picoVars.primaryHoverBackground,
@@ -1331,7 +1339,8 @@ const progressStyle = globalStyle("progress", {
       borderRadius: picoVars.borderRadius,
     },
     "&:indeterminate": {
-      backgroundImage: `linear-gradient(90deg, ${picoVars.progressColor} 30%, ${picoVars.progressBackground} 30%)`,
+      backgroundImage:
+        `linear-gradient(90deg, ${picoVars.progressColor} 30%, ${picoVars.progressBackground} 30%)`,
       backgroundSize: "200% 100%",
       animation: "progress-indeterminate 1.5s linear infinite",
     },
@@ -1355,7 +1364,8 @@ const meterStyle = globalStyle("meter", {
 const detailsStyle = globalStyle("details", {
   marginBottom: picoVars.typographySpacingVertical,
   paddingBottom: picoVars.spacing,
-  borderBottom: `${picoVars.borderWidth} solid ${picoVars.accordionBorderColor}`,
+  borderBottom:
+    `${picoVars.borderWidth} solid ${picoVars.accordionBorderColor}`,
 });
 
 const summaryStyle = globalStyle("summary", {
@@ -1494,7 +1504,8 @@ const articleStyle = globalStyle("article", {
     "& > header, & > footer": {
       marginLeft: `calc(-1 * ${picoVars.blockSpacingVertical})`,
       marginRight: `calc(-1 * ${picoVars.blockSpacingVertical})`,
-      padding: `calc(${picoVars.blockSpacingVertical} / 2) ${picoVars.blockSpacingVertical}`,
+      padding:
+        `calc(${picoVars.blockSpacingVertical} / 2) ${picoVars.blockSpacingVertical}`,
       backgroundColor: picoVars.cardSectioningBackground,
     },
     "& > header": {
@@ -1534,7 +1545,8 @@ const navStyle = globalStyle("nav", {
     },
     "& ul li": {
       margin: 0,
-      padding: `${picoVars.navElementSpacingVertical} ${picoVars.navElementSpacingHorizontal}`,
+      padding:
+        `${picoVars.navElementSpacingVertical} ${picoVars.navElementSpacingHorizontal}`,
     },
     "& a, & [role='link']": {
       display: "inline-block",
@@ -1610,7 +1622,8 @@ const tooltipStyle = globalStyle("[data-tooltip]", {
       whiteSpace: "nowrap",
       opacity: 0,
       visibility: "hidden",
-      transition: `opacity ${picoVars.transition}, visibility ${picoVars.transition}`,
+      transition:
+        `opacity ${picoVars.transition}, visibility ${picoVars.transition}`,
       zIndex: 100,
     },
     "&:hover::after, &:focus::after": {
@@ -1674,16 +1687,19 @@ const focusVisibleStyle = globalStyle(
 // Accessibility - Reduced Motion
 // =============================================================================
 
-const reducedMotionStyle = globalStyle("@media (prefers-reduced-motion: reduce)", {
-  selectors: {
-    "*, *::before, *::after": {
-      animationDuration: "0.01ms !important",
-      animationIterationCount: "1 !important",
-      transitionDuration: "0.01ms !important",
-      scrollBehavior: "auto !important",
+const reducedMotionStyle = globalStyle(
+  "@media (prefers-reduced-motion: reduce)",
+  {
+    selectors: {
+      "*, *::before, *::after": {
+        animationDuration: "0.01ms !important",
+        animationIterationCount: "1 !important",
+        transitionDuration: "0.01ms !important",
+        scrollBehavior: "auto !important",
+      },
     },
   },
-});
+);
 
 // =============================================================================
 // Export
