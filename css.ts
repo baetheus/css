@@ -15,12 +15,38 @@
  * console.log(render([button], STANDARD_RENDER));
  * ```
  *
- * @example CSS Variables
+ * @example CSS Variables with contracts
  * ```ts
- * import { vars, style } from "./css.ts";
+ * import { contract, vars, style, render } from "./css.ts";
  *
- * const theme = vars({ colors: { primary: "blue", secondary: "green" } });
- * const card = style({ ...theme.toProperties(), color: theme.colors.primary.toValue() });
+ * // Define the contract with arbitrary nesting (null marks each variable)
+ * const theme = contract({
+ *   colors: {
+ *     primary: null,
+ *     secondary: null,
+ *     brand: { light: null, dark: null },
+ *   },
+ *   spacing: null,  // top-level variable
+ * });
+ *
+ * // Use var references in styles
+ * const card = style({
+ *   color: theme.colors.primary,
+ *   backgroundColor: theme.colors.brand.light,
+ *   padding: theme.spacing,
+ * });
+ *
+ * // Create theme implementations
+ * const lightTheme = vars(theme, {
+ *   colors: {
+ *     primary: "blue",
+ *     secondary: "green",
+ *     brand: { light: "#eef", dark: "#335" },
+ *   },
+ *   spacing: "8px",
+ * });
+ *
+ * console.log(render([lightTheme, card]));
  * ```
  *
  * @example Media queries
@@ -36,9 +62,6 @@
  */
 
 import type * as CSS from "csstype";
-import type { Intersect } from "@baetheus/fun/kind";
-import * as R from "@baetheus/fun/record";
-import { pipe } from "@baetheus/fun/fn";
 
 // =============================================================================
 // Render Options
@@ -103,144 +126,247 @@ type VariableValue = `var(${VariableKey}${string})`;
 
 type Variables = { readonly [K in VariableKey]: string };
 
-export type Properties =
-  | CSS.Properties
-  | Variables;
+export type Property = CSS.Properties | Variables;
 
 export type CssValue = string | number;
 
 // =============================================================================
-// CssVars
+// CSS Variable Contracts
 // =============================================================================
 
-export type CssVarsInput = Record<
-  Exclude<string, "toProperties" | "toGroups">,
-  Record<string, CssValue>
->;
-
-type CssVarsGroups<T extends CssVarsInput> = {
-  readonly [G in keyof T]: {
-    readonly [K in keyof T[G]]: VariableValue;
-  };
+/**
+ * Recursive shape type for defining CSS variable structure.
+ * `null` marks a CSS variable leaf, nested objects mark groups.
+ *
+ * @example
+ * ```ts
+ * type MyShape = Shape; // { [key]: null | Shape }
+ *
+ * const shape = {
+ *   colors: {
+ *     primary: null,        // variable
+ *     brand: {
+ *       light: null,        // nested variable
+ *       dark: null,
+ *     },
+ *   },
+ *   spacing: null,          // top-level variable
+ * } satisfies Shape;
+ * ```
+ *
+ * @since 0.5.0
+ */
+export type Shape = {
+  readonly [key: string]: null | Shape;
 };
 
-type CssVarsProperties<T extends CssVarsInput> = Intersect<
-  {
-    [K in keyof T & string]: {
-      [IK in keyof T[K] & string as `--${string}-${K}-${IK}`]: T[K][IK];
-    };
-  }[keyof T & string]
->;
+/**
+ * Recursively transform a Shape to have var() references at each null leaf.
+ *
+ * @since 0.5.0
+ */
+type VarShape<T extends Shape> = {
+  readonly [K in keyof T]: T[K] extends null ? VariableValue
+    : T[K] extends Shape ? VarShape<T[K]>
+    : never;
+};
 
-const CssVarsBrand: unique symbol = Symbol("@baetheus/css/core/cssvars");
-
-export type CssVars<T extends CssVarsInput = CssVarsInput> = {
-  readonly [CssVarsBrand]: null;
-  readonly hash: string;
-  toProperties(): CssVarsProperties<T>;
-  toGroups(): CssVarsGroups<T>;
-} & CssVarsGroups<T>;
+const ContractHash: unique symbol = Symbol("@baetheus/css/core/contract");
 
 /**
- * Creates a collection of CSS variables organized by groups.
+ * Contract type - the result of the contract function.
+ * Contains var() references for each variable and a non-enumerable hash.
  *
- * Each group contains named variables that can be accessed directly or converted
- * to CSS properties for rendering.
- *
- * @param input - An object mapping group names to variable definitions
- * @returns A CssVars object with grouped variables and conversion methods
- *
- * @example
- * ```ts
- * import { vars, style } from "./css.ts";
- *
- * const theme = vars({
- *   colors: { primary: "blue", secondary: "green" },
- *   spacing: { small: "8px", large: "24px" },
- * });
- *
- * // Access variables
- * console.log(theme.colors.primary.toValue()); // "var(--hash-colors-primary)"
- *
- * // Convert to CSS properties
- * const root = style(theme.toProperties());
- * ```
- *
- * @since 0.0.2
+ * @since 0.5.0
  */
-export function vars<T extends CssVarsInput = CssVarsInput>(
-  input: T,
-  refHash?: string,
-): CssVars<T> {
-  const hash = refHash ?? hashObject(input);
-  const groups = pipe(
-    input,
-    R.map((outer, a) =>
-      pipe(
-        outer,
-        R.map((_, b) => `var(--${hash}-${a}-${b})`),
-      )
-    ),
-  ) as CssVarsGroups<T>;
+export type Contract<T extends Shape> = VarShape<T> & {
+  readonly [ContractHash]: string;
+};
 
-  const properties = pipe(
-    input,
-    R.flatmap((groups, a) =>
-      pipe(
-        groups,
-        R.flatmap((value, b) => ({ [`--${hash}-${a}-${b}`]: value })),
-      )
-    ),
-  ) as CssVarsProperties<T>;
-
-  const base = {
-    [CssVarsBrand]: null,
-    hash,
-    toProperties() {
-      return properties;
-    },
-    toGroups() {
-      return groups;
-    },
-  };
-
-  return Object.assign(base, groups);
+/**
+ * Recursively builds var() references for a shape.
+ * @internal
+ */
+function buildVarShape(
+  shape: Shape,
+  hash: string,
+  path: string[] = [],
+): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(shape)) {
+    const currentPath = [...path, key];
+    if (value === null) {
+      result[key] = `var(--${hash}-${currentPath.join("-")})`;
+    } else {
+      result[key] = buildVarShape(value, hash, currentPath);
+    }
+  }
+  return result;
 }
 
-export type FromVarsInput<T extends CssVarsInput> =
-  & Partial<{ [G in keyof T]: Partial<T[G]> }>
-  & CssVarsInput;
-
 /**
- * Creates a new CssVars collection based on an existing one, allowing partial overrides.
+ * Creates a CSS variable contract from a shape definition.
  *
- * This is useful for creating theme variants that override specific values
- * while maintaining type safety.
+ * The contract defines the structure of CSS variables and provides
+ * var() references that can be used in styles. The actual values
+ * are set separately using the vars() function.
  *
- * @param _ref - The reference CssVars to base the new collection on (used for type inference)
- * @param input - The new variable values (can be partial)
- * @returns A new CssVars object with the specified values
+ * @param shape - An object defining the variable structure (null marks variables)
+ * @returns A Contract with var() references and a non-enumerable hash
  *
  * @example
  * ```ts
- * import { vars, fromVars } from "./css.ts";
+ * import { contract, vars, style, render } from "./css.ts";
  *
- * const lightTheme = vars({
- *   colors: { bg: "white", text: "black" },
+ * // Define the contract with arbitrary nesting
+ * const theme = contract({
+ *   colors: {
+ *     primary: null,
+ *     secondary: null,
+ *     brand: {
+ *       light: null,
+ *       dark: null,
+ *     },
+ *   },
+ *   spacing: null,  // top-level variable
  * });
  *
- * const darkTheme = fromVars(lightTheme, {
- *   colors: { bg: "black", text: "white" },
+ * // Use var references in styles
+ * const button = style({
+ *   color: theme.colors.primary,
+ *   backgroundColor: theme.colors.brand.light,
+ *   padding: theme.spacing,
  * });
+ *
+ * // Create actual values
+ * const lightTheme = vars(theme, {
+ *   colors: {
+ *     primary: "blue",
+ *     secondary: "green",
+ *     brand: { light: "#eef", dark: "#335" },
+ *   },
+ *   spacing: "8px",
+ * });
+ *
+ * console.log(render([lightTheme, button]));
  * ```
  *
- * @since 0.0.2
+ * @since 0.5.0
  */
-export function fromVars<T extends CssVarsInput, U extends FromVarsInput<T>>(
-  _ref: CssVars<T>,
-  input: U,
-): CssVars<U> {
-  return vars(input, _ref.hash);
+export function contract<T extends Shape>(shape: T): Contract<T> {
+  const hash = hashObject(shape);
+  const result = buildVarShape(shape, hash) as VarShape<T>;
+
+  Object.defineProperty(result, ContractHash, {
+    value: hash,
+    enumerable: false,
+    writable: false,
+    configurable: false,
+  });
+
+  return result as Contract<T>;
+}
+
+/**
+ * Type guard to check if a value is a Contract object.
+ *
+ * @param value - The value to check
+ * @returns `true` if the value is a Contract, `false` otherwise
+ *
+ * @since 0.5.0
+ */
+export function isContract(value: unknown): value is Contract<Shape> {
+  return typeof value === "object" && value !== null && ContractHash in value;
+}
+
+/**
+ * Recursively transform a Shape to have CssValue at each null leaf.
+ *
+ * @since 0.5.0
+ */
+export type VarsValues<T extends Shape> = {
+  readonly [K in keyof T]: T[K] extends null ? CssValue
+    : T[K] extends Shape ? VarsValues<T[K]>
+    : never;
+};
+
+/**
+ * Recursively builds CSS custom properties from values.
+ * @internal
+ */
+function buildProperties(
+  values: Record<string, unknown>,
+  hash: string,
+  path: string[] = [],
+  properties: Record<string, CssValue> = {},
+): Record<string, CssValue> {
+  for (const [key, value] of Object.entries(values)) {
+    const currentPath = [...path, key];
+    if (typeof value === "object" && value !== null) {
+      buildProperties(
+        value as Record<string, unknown>,
+        hash,
+        currentPath,
+        properties,
+      );
+    } else {
+      properties[`--${hash}-${currentPath.join("-")}`] = value as CssValue;
+    }
+  }
+  return properties;
+}
+
+/**
+ * Creates a Style with CSS custom properties from a contract and values.
+ *
+ * This function generates the actual CSS custom property definitions
+ * that match the contract's structure.
+ *
+ * @param contract - The contract defining the variable structure
+ * @param values - The actual values for each variable
+ * @returns A Style containing the CSS custom properties
+ *
+ * @example
+ * ```ts
+ * import { contract, vars, render } from "./css.ts";
+ *
+ * const theme = contract({
+ *   colors: {
+ *     primary: null,
+ *     brand: { light: null, dark: null },
+ *   },
+ *   spacing: null,
+ * });
+ *
+ * const light = vars(theme, {
+ *   colors: {
+ *     primary: "blue",
+ *     brand: { light: "#eef", dark: "#335" },
+ *   },
+ *   spacing: "8px",
+ * });
+ *
+ * const dark = vars(theme, {
+ *   colors: {
+ *     primary: "white",
+ *     brand: { light: "#335", dark: "#eef" },
+ *   },
+ *   spacing: "8px",
+ * });
+ *
+ * console.log(render([light]));
+ * // Outputs: --hash-colors-primary: blue; --hash-colors-brand-light: #eef; etc.
+ * ```
+ *
+ * @since 0.5.0
+ */
+export function vars<T extends Shape>(
+  contract: Contract<T>,
+  values: VarsValues<T>,
+): Style {
+  const hash = contract[ContractHash];
+  const properties = buildProperties(values, hash);
+  return style(properties);
 }
 
 // =============================================================================
@@ -608,7 +734,7 @@ export function renderProperty(
  * @since 0.0.2
  */
 export function renderProperties(
-  properties: Properties,
+  properties: Property,
   options: RenderOptions = STANDARD_RENDER,
   depth: number = 0,
 ): string {
@@ -686,11 +812,7 @@ export function renderKeyframes(
 ): string {
   return properties
     .map((frame) => {
-      const body = renderProperties(
-        frame.properties as Properties,
-        options,
-        depth + 1,
-      );
+      const body = renderProperties(frame.properties, options, depth + 1);
       return renderBlock(frame.offset, body, options, depth);
     })
     .join(options.newline);
@@ -1113,7 +1235,7 @@ export type KeyframeOffset = "from" | "to" | `${number}%`;
  */
 export type KeyframeProperties = readonly {
   readonly offset: KeyframeOffset;
-  readonly properties: Properties;
+  readonly properties: Property;
 }[];
 
 /**
@@ -1283,7 +1405,7 @@ type AtRuleProperties = {
   "@import": undefined;
   "@charset": undefined;
   "@namespace": undefined;
-  "@page": Properties;
+  "@page": Property;
   "@property": PropertyDescriptors;
   "@scope": undefined;
   "@starting-style": undefined;
@@ -1481,13 +1603,14 @@ export function renderAtRule(
         depth,
       );
 
-    case "@page":
+    case "@page": {
       return renderBlock(
         prelude,
-        renderProperties(properties as Properties, options, depth + 1),
+        renderProperties(properties as Property, options, depth + 1),
         options,
         depth,
       );
+    }
 
     case "@property":
       return renderBlock(
@@ -1853,7 +1976,7 @@ export function cssNamespace(query: string): AtRule<"@namespace"> {
  */
 export function page(
   query: PagePseudo | string,
-  properties: Properties,
+  properties: Property,
 ): AtRule<"@page"> {
   return new AtRule("@page", { query, properties });
 }
@@ -2046,9 +2169,9 @@ export type StyleNestedAtRuleTag =
 // =============================================================================
 
 /**
- * Input type for style variants and children - either an existing Style or raw Properties.
+ * Input type for style variants and children - either an existing Style or raw Property.
  */
-export type StyleInput = Style | Properties;
+export type StyleInput = Style | Property;
 
 /**
  * Constraint type for variant definitions.
@@ -2074,7 +2197,7 @@ class BaseStyle<
   #name: string;
   #hash: string;
   #selector: Selector;
-  #properties: Properties;
+  #properties: Property;
   #atrules: readonly AtRule<StyleNestedAtRuleTag>[];
   #variants: Readonly<{ [K in keyof V]: ToStyle<V[K]> }>;
   #children: Readonly<{ [K in keyof C]: ToStyle<C[K]> }>;
@@ -2083,7 +2206,7 @@ class BaseStyle<
     name: string,
     hash: string,
     selector: Selector,
-    properties: Properties,
+    properties: Property,
     atrules: readonly AtRule<StyleNestedAtRuleTag>[],
     variants: Readonly<{ [K in keyof V]: ToStyle<V[K]> }>,
     children: Readonly<{ [K in keyof C]: ToStyle<C[K]> }>,
@@ -2165,7 +2288,7 @@ export type Style<
  * Options for style construction.
  */
 export type StyleOptions<V extends StyleRecord, C extends StyleRecord> = {
-  readonly properties: Properties;
+  readonly properties: Property;
   readonly at?: readonly AtRule<StyleNestedAtRuleTag>[];
   readonly variants?: V;
   readonly children?: C;
@@ -2203,30 +2326,37 @@ function base<V extends StyleRecord, C extends StyleRecord>(
   name: string,
   hash: string,
   selector: Selector,
-  options: StyleOptions<V, C>,
+  properties: Property,
+  options: Omit<StyleOptions<V, C>, "properties">,
 ): Style<V, C> {
-  const variants = pipe(
-    options.variants ?? {} as StyleRecord,
-    R.map((input) => isStyle(input) ? input.nest() : style(input).nest()),
+  const variantEntries = Object.entries(options.variants ?? {});
+  const variants = Object.fromEntries(
+    variantEntries.map(([key, input]) => [
+      key,
+      isStyle(input) ? input.nest() : style(input).nest(),
+    ]),
   ) as Readonly<{ [K in keyof V]: ToStyle<V[K]> }>;
 
-  const children = pipe(
-    options.children ?? {} as StyleRecord,
-    R.map((input) => isStyle(input) ? input : style(input)),
+  const childEntries = Object.entries(options.children ?? {});
+  const children = Object.fromEntries(
+    childEntries.map(([key, input]) => [
+      key,
+      isStyle(input) ? input : style(input),
+    ]),
   ) as Readonly<{ [K in keyof C]: ToStyle<C[K]> }>;
 
   // Create base style object
-  const base = new BaseStyle<V, C>(
+  const baseStyle = new BaseStyle<V, C>(
     name,
     hash,
     selector,
-    options.properties,
+    properties,
     options.at ?? [],
     variants,
     children,
   );
 
-  return Object.assign(base, children);
+  return Object.assign(baseStyle, children);
 }
 
 /**
@@ -2259,7 +2389,13 @@ export function raw<
   options: StyleOptions<V, C>,
 ): Style<V, C> {
   const hash = hashObject(options.properties);
-  return base("", hash, compoundSelector(selector as Selector), options);
+  return base(
+    "",
+    hash,
+    compoundSelector(selector as Selector),
+    options.properties,
+    options,
+  );
 }
 
 /**
@@ -2292,13 +2428,13 @@ export function raw<
  * @since 0.0.2
  */
 export function style<V extends StyleRecord, C extends StyleRecord>(
-  properties: Properties,
+  properties: Property,
   extra?: ExtraOptions<V, C>,
 ): Style<V, C> {
   const hash = hashObject(properties);
   const name = `.${hash}` as const;
   const selector = compoundSelector(name);
-  return base(name, hash, selector, { properties, ...extra });
+  return base(name, hash, selector, properties, extra ?? {});
 }
 
 /**
@@ -2321,14 +2457,14 @@ export function style<V extends StyleRecord, C extends StyleRecord>(
  * @since 0.0.2
  */
 export function id<V extends StyleRecord, C extends StyleRecord>(
-  id: string,
-  properties: Properties,
+  theId: string,
+  properties: Property,
   extra?: ExtraOptions<V, C>,
 ): Style<V, C> {
   const hash = hashObject(properties);
-  const name = `#${id}` as const;
+  const name = `#${theId}` as const;
   const selector = compoundSelector(name);
-  return base(name, hash, selector, { properties, ...extra });
+  return base(name, hash, selector, properties, extra ?? {});
 }
 
 /**
@@ -2352,13 +2488,13 @@ export function id<V extends StyleRecord, C extends StyleRecord>(
  */
 export function element<V extends StyleRecord, C extends StyleRecord>(
   el: HtmlElement,
-  properties: Properties,
+  properties: Property,
   extra?: ExtraOptions<V, C>,
 ): Style<V, C> {
   const hash = hashObject(properties);
   const name = el;
   const selector = compoundSelector(name);
-  return base(name, hash, selector, { properties, ...extra });
+  return base(name, hash, selector, properties, extra ?? {});
 }
 
 // =============================================================================

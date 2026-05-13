@@ -6,6 +6,7 @@ import {
   colorProfile,
   complexSelector,
   compoundSelector,
+  contract,
   container,
   counterStyle,
   cssNamespace,
@@ -13,10 +14,10 @@ import {
   fontFace,
   fontFeatureValues,
   fontPaletteValues,
-  fromVars,
   id,
   importRule,
   isAtRule,
+  isContract,
   isStyle,
   keyframes,
   layer,
@@ -63,57 +64,139 @@ Deno.test("MINIMAL_RENDER has correct values", () => {
 });
 
 // =============================================================================
-// vars and fromVars Tests
+// contract and vars Tests
 // =============================================================================
 
-Deno.test("vars - creates CssVars with grouped variables", () => {
-  const theme = vars({
-    colors: { primary: "blue", secondary: "green" },
+Deno.test("contract - creates Contract with var references", () => {
+  const theme = contract({
+    colors: { primary: null, secondary: null },
   });
   assertEquals(typeof theme.colors.primary, "string");
   assertEquals(theme.colors.primary.startsWith("var(--"), true);
+  assertEquals(theme.colors.secondary.startsWith("var(--"), true);
 });
 
-Deno.test("vars - toProperties returns CSS custom properties", () => {
-  const theme = vars({
-    colors: { primary: "blue" },
+Deno.test("contract - hash is non-enumerable", () => {
+  const theme = contract({
+    colors: { primary: null },
   });
-  const props = theme.toProperties();
-  const keys = Object.keys(props);
-  assertEquals(keys.length, 1);
-  assertEquals(keys[0].startsWith("--"), true);
+  const keys = Object.keys(theme);
+  assertEquals(keys.includes("hash"), false);
+  assertEquals(keys, ["colors"]);
 });
 
-Deno.test("vars - toGroups returns grouped variable references", () => {
-  const theme = vars({
+Deno.test("isContract - returns true for Contract", () => {
+  const theme = contract({
+    colors: { primary: null },
+  });
+  assertEquals(isContract(theme), true);
+});
+
+Deno.test("isContract - returns false for non-Contract", () => {
+  assertEquals(isContract({}), false);
+  assertEquals(isContract(null), false);
+  assertEquals(isContract({ colors: { primary: "blue" } }), false);
+});
+
+Deno.test("vars - creates Style from contract and values", () => {
+  const theme = contract({
+    colors: { primary: null, secondary: null },
+  });
+  const light = vars(theme, {
     colors: { primary: "blue", secondary: "green" },
-    spacing: { small: "8px" },
   });
-  const groups = theme.toGroups();
-  assertEquals(typeof groups.colors.primary, "string");
-  assertEquals(typeof groups.spacing.small, "string");
-  assertEquals(groups.colors.primary.startsWith("var(--"), true);
+  assertEquals(isStyle(light), true);
+  const result = light.render(STANDARD_RENDER, 0);
+  assertEquals(result.includes("--"), true);
+  assertEquals(result.includes("blue"), true);
+  assertEquals(result.includes("green"), true);
 });
 
-Deno.test("vars - handles existing var() values", () => {
-  const theme = vars({
-    colors: { primary: "var(--existing)" },
+Deno.test("vars - multiple themes from same contract use same hash", () => {
+  const theme = contract({
+    colors: { bg: null, text: null },
   });
-  assertEquals(typeof theme.colors.primary, "string");
-  assertEquals(theme.colors.primary.startsWith("var(--"), true);
-});
-
-Deno.test("fromVars - creates new CssVars from reference", () => {
-  const light = vars({
+  const light = vars(theme, {
     colors: { bg: "white", text: "black" },
   });
-  const dark = fromVars(light, {
+  const dark = vars(theme, {
     colors: { bg: "black", text: "white" },
   });
-  assertEquals(typeof dark.colors.bg, "string");
-  assertEquals(dark.colors.bg.startsWith("var(--"), true);
-  // Both should use the same hash since fromVars uses the reference hash
-  assertEquals(dark.hash, light.hash);
+  // Both styles should have same var names (same hash from contract)
+  const lightResult = light.render(STANDARD_RENDER, 0);
+  const darkResult = dark.render(STANDARD_RENDER, 0);
+  // Extract the hash from the variable names
+  const lightMatch = lightResult.match(/--([a-z0-9]+)-colors-bg/);
+  const darkMatch = darkResult.match(/--([a-z0-9]+)-colors-bg/);
+  assertEquals(lightMatch?.[1], darkMatch?.[1]);
+});
+
+Deno.test("vars - consistent hashes for same contract structure", () => {
+  const c1 = contract({ colors: { primary: null } });
+  const c2 = contract({ colors: { primary: null } });
+  // Same structure should produce same hash
+  assertEquals(c1.colors.primary, c2.colors.primary);
+});
+
+Deno.test("contract - supports deeply nested structures", () => {
+  const theme = contract({
+    colors: {
+      primary: null,
+      brand: {
+        light: null,
+        dark: null,
+      },
+    },
+    spacing: null,
+  });
+  // Check var references are created at each level
+  assertEquals(theme.colors.primary.startsWith("var(--"), true);
+  assertEquals(theme.colors.brand.light.startsWith("var(--"), true);
+  assertEquals(theme.colors.brand.dark.startsWith("var(--"), true);
+  assertEquals(theme.spacing.startsWith("var(--"), true);
+  // Check paths are correct
+  assertEquals(theme.colors.primary.includes("-colors-primary"), true);
+  assertEquals(theme.colors.brand.light.includes("-colors-brand-light"), true);
+  assertEquals(theme.spacing.includes("-spacing)"), true);
+});
+
+Deno.test("vars - works with deeply nested structures", () => {
+  const theme = contract({
+    colors: {
+      primary: null,
+      brand: {
+        light: null,
+        dark: null,
+      },
+    },
+    spacing: null,
+  });
+  const values = vars(theme, {
+    colors: {
+      primary: "blue",
+      brand: {
+        light: "#eef",
+        dark: "#335",
+      },
+    },
+    spacing: "8px",
+  });
+  assertEquals(isStyle(values), true);
+  const result = values.render(STANDARD_RENDER, 0);
+  assertEquals(result.includes("-colors-primary: blue;"), true);
+  assertEquals(result.includes("-colors-brand-light: #eef;"), true);
+  assertEquals(result.includes("-colors-brand-dark: #335;"), true);
+  assertEquals(result.includes("-spacing: 8px;"), true);
+});
+
+Deno.test("contract - top-level variables work", () => {
+  const theme = contract({
+    fontSize: null,
+    lineHeight: null,
+  });
+  assertEquals(theme.fontSize.startsWith("var(--"), true);
+  assertEquals(theme.lineHeight.startsWith("var(--"), true);
+  assertEquals(theme.fontSize.includes("-fontSize)"), true);
 });
 
 // =============================================================================
@@ -989,16 +1072,11 @@ Deno.test("font-face with numeric fontWeight", () => {
   assertEquals(result.includes("font-weight: 400;"), true);
 });
 
-Deno.test("vars - generates consistent hashes", () => {
-  const v1 = vars({ colors: { primary: "blue" } });
-  const v2 = vars({ colors: { primary: "blue" } });
-
-  const props1 = v1.toProperties();
-  const props2 = v2.toProperties();
-  const keys1 = Object.keys(props1);
-  const keys2 = Object.keys(props2);
-
-  assertEquals(keys1[0], keys2[0]);
+Deno.test("contract - generates consistent hashes", () => {
+  const c1 = contract({ colors: { primary: null } });
+  const c2 = contract({ colors: { primary: null } });
+  // Same structure produces same var references
+  assertEquals(c1.colors.primary, c2.colors.primary);
 });
 
 Deno.test("complex selector with nested compound", () => {
@@ -1145,4 +1223,79 @@ Deno.test("renderAtRule - @starting-style without children", () => {
   const result = renderAtRule(rule, STANDARD_RENDER, 0);
   assertEquals(result.includes("@starting-style"), true);
   assertEquals(result.includes("{}"), true);
+});
+
+// =============================================================================
+// Contract and vars Coverage Tests
+// =============================================================================
+
+Deno.test("style - with contract var references", () => {
+  const theme = contract({
+    colors: { primary: null, secondary: null },
+  });
+  const s = style({ color: theme.colors.primary });
+  const result = s.render(STANDARD_RENDER, 0);
+  assertEquals(result.includes("color: var(--"), true);
+});
+
+Deno.test("vars - produces valid CSS custom properties", () => {
+  const theme = contract({
+    colors: { primary: null },
+  });
+  const light = vars(theme, {
+    colors: { primary: "blue" },
+  });
+  const result = light.render(STANDARD_RENDER, 0);
+  assertEquals(result.includes("--"), true);
+  assertEquals(result.includes(": blue;"), true);
+});
+
+Deno.test("renderAtRule - @media with empty children array", () => {
+  const rule = media("(min-width: 768px)");
+  const result = renderAtRule(rule, STANDARD_RENDER, 0);
+  assertEquals(result.includes("@media (min-width: 768px)"), true);
+  assertEquals(result.includes("{}"), true);
+});
+
+Deno.test("renderAtRule - @scope with children", () => {
+  const s = style({ color: "red" });
+  const rule = scope("(.card) to (.card-content)", s);
+  const result = renderAtRule(rule, STANDARD_RENDER, 0);
+  assertEquals(result.includes("@scope (.card) to (.card-content)"), true);
+  assertEquals(result.includes("color: red;"), true);
+});
+
+// =============================================================================
+// Edge Case Coverage Tests (defensive code paths)
+// =============================================================================
+
+Deno.test("renderAtRule - @page with custom properties", () => {
+  const rule = new AtRule("@page", {
+    query: ":first",
+    properties: { "--custom-margin": "2cm", margin: "2cm" },
+  } as { query: ":first"; properties: { "--custom-margin": string; margin: string } });
+  const result = renderAtRule(rule, STANDARD_RENDER, 0);
+  assertEquals(result.includes("@page :first"), true);
+  assertEquals(result.includes("--custom-margin: 2cm;"), true);
+});
+
+Deno.test("renderAtRule - @media with undefined children (direct construction)", () => {
+  // Test the falsy children branch by creating an AtRule directly
+  const rule = new AtRule("@media", {
+    query: "(min-width: 768px)",
+    children: undefined,
+  } as unknown as { query: string; children: [] });
+  const result = renderAtRule(rule, STANDARD_RENDER, 0);
+  assertEquals(result.includes("@media (min-width: 768px)"), true);
+  assertEquals(result.includes("{}"), true);
+});
+
+Deno.test("renderAtRule - unknown tag returns empty string (defensive)", () => {
+  // Test the default case in the switch by creating an AtRule with an unknown tag
+  const rule = new AtRule("@unknown" as "@media", {
+    query: "test",
+    children: [],
+  } as unknown as { query: string; children: [] });
+  const result = renderAtRule(rule, STANDARD_RENDER, 0);
+  assertEquals(result, "");
 });
