@@ -1,7 +1,7 @@
 {
   "name": "@baetheus/css",
   "version": "0.0.2",
-  "exports": 
+  "exports": {
     ".": "./css.ts"
   },
   "imports": {

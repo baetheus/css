@@ -6,8 +6,8 @@ import {
   colorProfile,
   complexSelector,
   compoundSelector,
-  contract,
   container,
+  contract,
   counterStyle,
   cssNamespace,
   element,
@@ -1273,7 +1273,10 @@ Deno.test("renderAtRule - @page with custom properties", () => {
   const rule = new AtRule("@page", {
     query: ":first",
     properties: { "--custom-margin": "2cm", margin: "2cm" },
-  } as { query: ":first"; properties: { "--custom-margin": string; margin: string } });
+  } as {
+    query: ":first";
+    properties: { "--custom-margin": string; margin: string };
+  });
   const result = renderAtRule(rule, STANDARD_RENDER, 0);
   assertEquals(result.includes("@page :first"), true);
   assertEquals(result.includes("--custom-margin: 2cm;"), true);

@@ -1,50 +1,38 @@
-# @baetheus/css
+# @baetheus/css [![JSR](https://jsr.io/badges/@baetheus/css)](https://jsr.io/@baetheus/css)
 
-A type-safe CSS-in-JS library for Deno with scoped styles, theming, and a
-complete CSS AST.
+A type-safe CSS-in-TypeScript library for Deno with scoped styles, theming, and
+a complete CSS at-rule system.
 
 This project was vibe coded with Claude.
 
-## Description
-
-`@baetheus/css` provides a complete CSS Abstract Syntax Tree and a high-level
-API for creating scoped styles, CSS variables, keyframe animations, font faces,
-layers, and recipes (variant-based component styles). All styles are compiled to
-CSS AST rules that can be rendered to strings.
-
-### Features
+## Features
 
 - Scoped class name generation with content-based hashing
-- Full CSS AST representation for all major at-rules (@media, @supports,
-  @container, @keyframes, @font-face, @layer, @property)
-- CSS variable theming with type-safe contracts
-- Recipe pattern for variant-based component styles
-- Style composition and merging
-- Selector builders (class, id, tag, attribute, pseudo-class, pseudo-element,
-  combinators)
+- Full CSS at-rule support (@media, @supports, @container, @keyframes, @font-face, @layer, @property, and more)
+- CSS variable contracts with type-safe theming
+- Built-in variant support for component styles
+- Style composition with children
+- Selector builders (compound and complex selectors)
 - Zero runtime in production (all CSS is generated at build time)
 
-## Usage
-
-### Installation
+## Installation
 
 ```bash
 deno add jsr:@baetheus/css
 ```
 
+## Usage
+
 ### Basic Styles
 
 ```ts
-import { render, style } from "@baetheus/css/core";
+import { style, render } from "@baetheus/css";
 
 const button = style({
   backgroundColor: "blue",
   color: "white",
   padding: "8px 16px",
-  borderRadius: 4,
-  selectors: {
-    "&:hover": { backgroundColor: "darkblue" },
-  },
+  borderRadius: "4px",
 });
 
 // Use in DOM
@@ -57,104 +45,135 @@ const css = render([button]);
 ### CSS Variables / Theming
 
 ```ts
-import { createVars, render, style, vars } from "@baetheus/css/core";
+import { contract, vars, style, render } from "@baetheus/css";
 
-const theme = createVars({
+// Define the contract with arbitrary nesting (null marks each variable)
+const theme = contract({
   colors: {
     primary: null,
     secondary: null,
+    brand: { light: null, dark: null },
   },
+  spacing: null,
 });
 
+// Use var references in styles
+const card = style({
+  color: theme.colors.primary,
+  backgroundColor: theme.colors.brand.light,
+  padding: theme.spacing,
+});
+
+// Create theme implementations
 const lightTheme = vars(theme, {
-  colors: { primary: "#0066cc", secondary: "#666666" },
+  colors: {
+    primary: "blue",
+    secondary: "green",
+    brand: { light: "#eef", dark: "#335" },
+  },
+  spacing: "8px",
 });
 
 const darkTheme = vars(theme, {
-  colors: { primary: "#66b3ff", secondary: "#cccccc" },
-});
-
-const card = style({
-  backgroundColor: theme.colors.primary,
-  color: theme.colors.secondary,
+  colors: {
+    primary: "white",
+    secondary: "#ccc",
+    brand: { light: "#335", dark: "#eef" },
+  },
+  spacing: "8px",
 });
 
 // Apply theme
 document.body.className = lightTheme.toString();
+
+console.log(render([lightTheme, card]));
 ```
 
-### Recipes (Variants)
+### Variants
 
 ```ts
-import { recipe, render } from "@baetheus/css/core";
+import { style, render } from "@baetheus/css";
 
-const button = recipe({
-  base: {
+const button = style(
+  {
     display: "inline-flex",
     alignItems: "center",
-    borderRadius: 4,
+    borderRadius: "4px",
   },
-  variants: {
-    size: {
-      small: { padding: "4px 8px", fontSize: 12 },
-      large: { padding: "12px 24px", fontSize: 16 },
-    },
-    variant: {
+  {
+    variants: {
+      small: { padding: "4px 8px", fontSize: "12px" },
+      large: { padding: "12px 24px", fontSize: "16px" },
       primary: { backgroundColor: "blue", color: "white" },
       ghost: { backgroundColor: "transparent", color: "blue" },
     },
   },
-  defaultVariants: {
-    size: "small",
-    variant: "primary",
-  },
-});
+);
 
-// Use with defaults
+// Use base styles
 element.className = button.toString();
 
-// Use with specific variants
-element.className = button.with({ size: "large", variant: "ghost" });
+// Use with variants
+element.className = button.with("large", "primary");
+```
+
+### Media Queries
+
+```ts
+import { style, media, render } from "@baetheus/css";
+
+const responsive = style({ fontSize: "14px" });
+const query = media("(min-width: 768px)", responsive);
+
+console.log(render([responsive, query]));
 ```
 
 ### Keyframes
 
 ```ts
-import { keyframes, render, style } from "@baetheus/css/core";
+import { keyframes, style, render } from "@baetheus/css";
 
-const fadeIn = keyframes({
-  from: { opacity: 0 },
-  to: { opacity: 1 },
-});
+const fadeIn = keyframes("fadeIn", [
+  { offset: "from", properties: { opacity: "0" } },
+  { offset: "to", properties: { opacity: "1" } },
+]);
 
 const animated = style({
-  animation: `${fadeIn} 0.3s ease-out`,
+  animation: "fadeIn 0.3s ease-out",
 });
+
+console.log(render([fadeIn, animated]));
 ```
 
-### Low-Level AST
+### Element and ID Selectors
 
 ```ts
-import { cls, mediaRule, prop, renderRule, styleRule } from "@baetheus/css/ast";
+import { element, id, render } from "@baetheus/css";
 
-const rule = styleRule(cls("button"), [
-  prop("display", "inline-flex"),
-  prop("padding", "8px 16px"),
-]);
+const body = element("body", { margin: "0", fontFamily: "sans-serif" });
+const header = id("header", { position: "fixed", top: "0" });
 
-const responsive = mediaRule("(min-width: 768px)", [
-  styleRule(cls("container"), [prop("width", "750px")]),
-]);
+console.log(render([body, header]));
+```
 
-console.log(renderRule(rule));
-console.log(renderRule(responsive));
+### Render Options
+
+```ts
+import { style, render, STANDARD_RENDER, MINIMAL_RENDER } from "@baetheus/css";
+
+const button = style({ color: "blue" });
+
+// Human-readable output
+console.log(render([button], STANDARD_RENDER));
+
+// Minified output
+console.log(render([button], MINIMAL_RENDER));
 ```
 
 ## Inspirations
 
 - [vanilla-extract](https://vanilla-extract.style/) - The primary inspiration
-  for the API design, particularly the `style`, `recipe`, `createVar`, and
-  theming patterns
+  for the API design, particularly the `style`, `contract`, and theming patterns
 - [Sass](https://sass-lang.com/) - Influence on nesting and selector composition
 - [fp-ts](https://gcanti.github.io/fp-ts/) - Functional programming patterns and
   type-safe design
@@ -177,7 +196,7 @@ so there's plenty of room for improvement.
 deno test
 
 # Type check
-deno check ast.ts core.ts
+deno check css.ts
 
 # Format
 deno fmt
