@@ -8,7 +8,8 @@ This project was vibe coded with Claude.
 ## Features
 
 - Scoped class name generation with content-based hashing
-- Full CSS at-rule support (@media, @supports, @container, @keyframes, @font-face, @layer, @property, and more)
+- Full CSS at-rule support (@media, @supports, @container, @keyframes,
+  @font-face, @layer, @property, and more)
 - CSS variable contracts with type-safe theming
 - Built-in variant support for component styles
 - Style composition with children
@@ -26,7 +27,7 @@ deno add jsr:@baetheus/css
 ### Basic Styles
 
 ```ts
-import { style, render } from "@baetheus/css";
+import { render, style } from "@baetheus/css";
 
 const button = style({
   backgroundColor: "blue",
@@ -45,7 +46,7 @@ const css = render([button]);
 ### CSS Variables / Theming
 
 ```ts
-import { contract, vars, style, render } from "@baetheus/css";
+import { contract, render, style, vars } from "@baetheus/css";
 
 // Define the contract with arbitrary nesting (null marks each variable)
 const theme = contract({
@@ -92,7 +93,7 @@ console.log(render([lightTheme, card]));
 ### Variants
 
 ```ts
-import { style, render } from "@baetheus/css";
+import { render, style } from "@baetheus/css";
 
 const button = style(
   {
@@ -120,7 +121,7 @@ element.className = button.with("large", "primary");
 ### Media Queries
 
 ```ts
-import { style, media, render } from "@baetheus/css";
+import { media, render, style } from "@baetheus/css";
 
 const responsive = style({ fontSize: "14px" });
 const query = media("(min-width: 768px)", responsive);
@@ -131,7 +132,7 @@ console.log(render([responsive, query]));
 ### Keyframes
 
 ```ts
-import { keyframes, style, render } from "@baetheus/css";
+import { keyframes, render, style } from "@baetheus/css";
 
 const fadeIn = keyframes("fadeIn", [
   { offset: "from", properties: { opacity: "0" } },
@@ -159,7 +160,7 @@ console.log(render([body, header]));
 ### Render Options
 
 ```ts
-import { style, render, STANDARD_RENDER, MINIMAL_RENDER } from "@baetheus/css";
+import { MINIMAL_RENDER, render, STANDARD_RENDER, style } from "@baetheus/css";
 
 const button = style({ color: "blue" });
 
