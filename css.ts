@@ -1,4 +1,6 @@
 import type * as CSS from "csstype";
+import * as R from "@baetheus/fun/record";
+import { pipe } from "@baetheus/fun/fn";
 
 // =============================================================================
 // Properties and Variables
@@ -190,19 +192,6 @@ export type AttributeSelector =
   | `[${HtmlAttributes}|="${string}"]`;
 
 /**
- * Union of all simple selector types.
- *
- * @since 0.4.0
- */
-export type SimpleSelector =
-  | HtmlElement
-  | ClassSelector
-  | IdSelector
-  | UniversalSelector
-  | ParentSelector
-  | AttributeSelector;
-
-/**
  * CSS selector combinators.
  *
  * @since 0.4.0
@@ -214,7 +203,7 @@ export type SelectorCombinator = " " | ">" | "+" | "~";
  *
  * @since 0.4.0
  */
-export type SelectorValue =
+type SelectorValue =
   | HtmlElement
   | ClassSelector
   | IdSelector
@@ -226,7 +215,7 @@ export type SelectorValue =
   | PseudoElementValue
   | Selector;
 
-export type SelectorValues = readonly [SelectorValue, ...SelectorValue[]];
+type SelectorValues = readonly [SelectorValue, ...SelectorValue[]];
 
 export type CompoundSelector = {
   readonly type: "CompoundSelector";
@@ -266,12 +255,43 @@ export function renderSelector(selector: Selector): string {
   return selector.values.map(renderSelectorValue).join(selector.combinator);
 }
 
+function getSelectorKindFromString(value: string): SelectorKind {
+  if (value === "*") return "universal";
+  if (value === "&") return "parent";
+  if (value.startsWith(".")) return "class";
+  if (value.startsWith("#")) return "id";
+  if (value.startsWith("[")) return "attribute";
+  if (value.startsWith("::")) return "pseudo-element";
+  if (value.startsWith(":") && value.includes("(")) return "function-class";
+  if (value.startsWith(":")) return "pseudo-class";
+  return "html";
+}
+
+function getSelectorKind(selector: Selector): SelectorKind {
+  const first = selector.values[0];
+  if (typeof first === "object" && first !== null && "type" in first) {
+    return getSelectorKind(first);
+  }
+  return getSelectorKindFromString(first);
+}
+
+function isNestableSelector(selector: Selector): boolean {
+  switch (getSelectorKind(selector)) {
+    case "html":
+    case "universal":
+    case "parent":
+      return false;
+    default:
+      return true;
+  }
+}
+
 /**
  * String representations of all selector types.
  *
  * @since 0.4.0
  */
-export type SelectorKind =
+type SelectorKind =
   | "html"
   | "class"
   | "id"
@@ -873,7 +893,7 @@ export function hashObject(input: unknown): string {
   return hash.toString(36).padStart(7, "0"); // 7 chars, zero-padded
 }
 
-const StyleBrand = Symbol("@baetheus/css/core/style");
+const StyleBrand: unique symbol = Symbol("@baetheus/css/core/style");
 
 /**
  * At-rules that can be nested inside a style rule.
@@ -888,28 +908,104 @@ export type StyleNestedAtRuleTag =
   | "@scope"
   | "@starting-style";
 
-/**
- * Child types allowed inside a Style rule.
- *
- * @since 0.4.0
- */
-export type StyleChild = Style | AtRule<StyleNestedAtRuleTag>;
+// =============================================================================
+// Style Types
+// =============================================================================
 
-export class Style {
+/**
+ * Input type for style variants and children - either an existing Style or raw Properties.
+ */
+export type StyleInput = Style | Properties;
+
+/**
+ * Constraint type for variant definitions.
+ */
+export type StyleRecord = Readonly<Record<string, StyleInput>>;
+
+/**
+ * Convert StyleInput to proper Style type.
+ */
+export type ToStyle<T> = T extends Style<infer V, infer C> ? Style<V, C>
+  : Style;
+
+/**
+ * Full Style type with variants and children accessible as direct properties.
+ */
+class BaseStyle<
+  // deno-lint-ignore ban-types
+  V extends StyleRecord = {},
+  // deno-lint-ignore ban-types
+  C extends StyleRecord = {},
+> {
   readonly [StyleBrand] = null;
+  #name: string;
+  #hash: string;
+  #selector: Selector;
+  #properties: Properties;
+  #atrules: readonly AtRule<StyleNestedAtRuleTag>[];
+  #variants: Readonly<{ [K in keyof V]: ToStyle<V[K]> }>;
+  #children: Readonly<{ [K in keyof C]: ToStyle<C[K]> }>;
 
   constructor(
-    readonly name: string,
-    readonly hash: string,
-    readonly selector: Selector,
-    readonly properties: Properties,
-    readonly children: readonly StyleChild[],
-  ) {}
+    name: string,
+    hash: string,
+    selector: Selector,
+    properties: Properties,
+    atrules: readonly AtRule<StyleNestedAtRuleTag>[],
+    variants: Readonly<{ [K in keyof V]: ToStyle<V[K]> }>,
+    children: Readonly<{ [K in keyof C]: ToStyle<C[K]> }>,
+  ) {
+    this.#name = name;
+    this.#hash = hash;
+    this.#selector = selector;
+    this.#properties = properties;
+    this.#atrules = atrules;
+    this.#variants = variants;
+    this.#children = children;
+  }
 
-  toString() {
-    return this.name;
+  toString(): string {
+    return this.#name;
+  }
+  nest(): Style<V, C> {
+    if (isNestableSelector(this.#selector)) {
+      const base = new BaseStyle(
+        this.#name,
+        this.#hash,
+        compoundSelector("&", this.#selector),
+        this.#properties,
+        this.#atrules,
+        this.#variants,
+        this.#children,
+      );
+      return Object.assign(base, this.#children);
+    }
+    return this as Style<V, C>;
+  }
+  with(...keys: (keyof V)[]): string {
+    return [this.#name, ...keys.map((key) => this.#variants[key].toString())]
+      .join(" ");
   }
 }
+
+export type Style<
+  // deno-lint-ignore ban-types
+  V extends StyleRecord = {},
+  // deno-lint-ignore ban-types
+  C extends StyleRecord = {},
+> =
+  & BaseStyle<V, C>
+  & { readonly [K in Exclude<keyof C, keyof BaseStyle<V>>]: ToStyle<C[K]> };
+
+/**
+ * Options for style construction.
+ */
+export type StyleOptions<V extends StyleRecord, C extends StyleRecord> = {
+  readonly properties: Properties;
+  readonly at?: readonly AtRule<StyleNestedAtRuleTag>[];
+  readonly variants?: V;
+  readonly children?: C;
+};
 
 /**
  * Type guard to check if a value is a Style object.
@@ -917,9 +1013,8 @@ export class Style {
  * @example
  * ```ts
  * import { isStyle, style } from "./core.ts";
- * import { select } from "./ast.ts";
  *
- * const s = style(select.cls("btn"), { color: "red" });
+ * const s = style(compoundSelector(".btn"), { properties: { color: "red" } });
  * isStyle(s);              // true
  * isStyle({ color: "red" }); // false
  * ```
@@ -927,296 +1022,64 @@ export class Style {
  * @since 0.1.0
  */
 export function isStyle(input: unknown): input is Style {
-  return input !== null && typeof input == "object" &&
+  return input !== null && typeof input === "object" &&
     Object.hasOwn(input, StyleBrand);
 }
 
-/**
- * Create a style with a selector, properties, and optional children.
- *
- * @since 0.1.0
- */
-export function style(
+export type ExtraOptions<V extends StyleRecord, C extends StyleRecord> = {
+  readonly [K in Exclude<keyof StyleOptions<V, C>, "properties">]: StyleOptions<
+    V,
+    C
+  >[K];
+};
+
+export function style<V extends StyleRecord, C extends StyleRecord>(
+  name: string,
+  hash: string,
   selector: Selector,
-  properties: Properties,
-  children: readonly StyleChild[] = [],
-): Style {
-  const name = renderSelector(selector);
-  const hash = hashObject(properties);
-  return new Style(name, hash, selector, properties, children);
-}
+  options: StyleOptions<V, C>,
+): Style<V, C> {
+  const variants = pipe(
+    options.variants ?? {} as StyleRecord,
+    R.map((input) => isStyle(input) ? input.nest() : cls(input).nest()),
+  ) as Readonly<{ [K in keyof V]: ToStyle<V[K]> }>;
 
-export function compound(
-  selectorValues: readonly [SelectorValue, ...SelectorValue[]],
-  properties: Properties,
-  ...children: readonly StyleChild[]
-): Style {
-  return style(compoundSelector(...selectorValues), properties, children);
-}
+  const children = pipe(
+    options.children ?? {} as StyleRecord,
+    R.map((input) => isStyle(input) ? input : cls(input)),
+  ) as Readonly<{ [K in keyof C]: ToStyle<C[K]> }>;
 
-export function complex(
-  combinator: SelectorCombinator,
-  selector: readonly [SelectorValue, ...SelectorValue[]],
-  properties: Properties,
-  ...children: readonly StyleChild[]
-): Style {
-  return style(
-    complexSelector(combinator, ...selector),
-    properties,
+  // Create base style object
+  const base = new BaseStyle<V, C>(
+    name,
+    hash,
+    selector,
+    options.properties,
+    options.at ?? [],
+    variants,
     children,
   );
+
+  return Object.assign(base, children);
 }
 
-export function cls(
+export function cls<V extends StyleRecord, C extends StyleRecord>(
   properties: Properties,
-  ...children: readonly StyleChild[]
+  extra?: ExtraOptions<V, C>,
 ): Style {
-  const selector = compoundSelector(`.${hashObject(properties)}`);
-  return style(selector, properties, children);
+  const hash = hashObject(properties);
+  const name = `.${hash}` as const;
+  const selector = compoundSelector(name);
+  return style(name, hash, selector, { properties, ...extra });
 }
 
-/**
- * Create a new Style by extending an existing Style with additional properties and children.
- * Performs a deep merge of properties.
- *
- * @example
- * ```ts
- * const baseButton = cls({ padding: "1rem", color: "black" });
- * const primaryButton = from(baseButton, { color: "blue" });
- * // primaryButton has { padding: "1rem", color: "blue" }
- * ```
- *
- * @since 0.5.0
- */
-export function from(
-  base: Style,
-  properties: Properties = {},
-  children: readonly StyleChild[] = [],
+export function id<V extends StyleRecord, C extends StyleRecord>(
+  id: string,
+  properties: Properties,
+  extra?: ExtraOptions<V, C>,
 ): Style {
-  const mergedProperties = { ...base.properties, ...properties };
-  const mergedChildren = [...base.children, ...children];
-  return cls(mergedProperties, ...mergedChildren);
-}
-
-export type VariantInput = Readonly<Record<string, Style | Properties>>;
-
-/**
- * Creates a collection of named style variants.
- * Returns an object mapping variant names to Style instances.
- *
- * @example
- * ```ts
- * const background = styleVariants({
- *   primary: { background: "blue" },
- *   secondary: { background: "aqua" },
- * });
- *
- * // Use: background.primary.toString() -> ".abc123"
- * ```
- *
- * @example With base style
- * ```ts
- * const baseButton = cls({ padding: "1rem" });
- *
- * const buttons = styleVariants({
- *   primary: from(baseButton, { background: "blue" }),
- *   secondary: from(baseButton, { background: "gray" }),
- * });
- * ```
- *
- * @since 0.5.0
- */
-export function variants<T extends VariantInput>(
-  variants: T,
-): { readonly [K in keyof T]: Style } {
-  const result = {} as { [K in keyof T]: Style };
-
-  for (const [variantName, input] of Object.entries(variants)) {
-    const variant = isStyle(input) ? input : cls(input);
-    result[variantName as keyof T] = variant;
-  }
-
-  return result;
-}
-
-/**
- * Variant definition for a recipe.
- * Maps variant names to their possible values and styles.
- */
-export type RecipeVariants = Readonly<Record<string, VariantInput>>;
-
-/**
- * Extract the variant selection type from a RecipeVariants definition.
- */
-type RecipeVariantSelection<V extends RecipeVariants> = {
-  [K in keyof V]?: keyof V[K];
-};
-
-/**
- * Compound variant definition - applies styles when multiple variants match.
- */
-export type CompoundVariant<V extends RecipeVariants> = {
-  readonly variants: RecipeVariantSelection<V>;
-  readonly style: Style | Properties;
-};
-
-export type CompoundStyle<V extends RecipeVariants> = {
-  readonly variants: RecipeVariantSelection<V>;
-  readonly style: Style;
-};
-
-/**
- * Configuration for the recipe function.
- */
-export type RecipeConfig<V extends RecipeVariants> = {
-  readonly base: Style | Properties;
-  readonly variants?: V;
-  readonly compoundVariants?: readonly CompoundVariant<V>[];
-};
-
-export type RecipeVariantStyles<V extends RecipeVariants> = {
-  readonly [K in keyof V]: { readonly [VK in keyof V[K]]: Style };
-};
-
-const RecipeBrand = Symbol("@baetheus/css/core/recipe");
-
-/**
- * Recipe class extends Style and provides variant selection via the `with` method.
- *
- * @since 0.5.0
- */
-export class Recipe<V extends RecipeVariants = RecipeVariants> extends Style {
-  readonly [RecipeBrand] = null;
-  readonly variants: RecipeVariantStyles<V>;
-  readonly compounds: readonly CompoundStyle<V>[];
-
-  constructor(
-    readonly config: RecipeConfig<V>,
-  ) {
-    // Create base (some triple hashing here :D
-    const base = isStyle(config.base) ? config.base : cls(config.base);
-    super(base.name, base.hash, base.selector, base.properties, base.children);
-
-    // Create variant styles
-    const variants: Record<string, Record<string, Style>> = {};
-    for (const [option, inputs] of Object.entries(config.variants ?? {})) {
-      variants[option] = {};
-      for (const [name, input] of Object.entries(inputs)) {
-        const variant = isStyle(input) ? input : cls(input);
-        variants[option][name] = variant;
-      }
-    }
-
-    // Create compound variant styles
-    const compoundInputs = config.compoundVariants ?? [];
-    const compounds: CompoundStyle<V>[] = compoundInputs.map(
-      (compound) => {
-        const compoundStyle = isStyle(compound.style)
-          ? compound.style
-          : cls(compound.style);
-        return { variants: compound.variants, style: compoundStyle };
-      },
-    );
-
-    this.variants = variants as RecipeVariantStyles<V>;
-    this.compounds = compounds;
-  }
-
-  /**
-   * Select variants and return the combined class names as a space-separated string.
-   *
-   * @example
-   * ```ts
-   * const button = recipe({
-   *   base: { padding: "1rem" },
-   *   variants: {
-   *     color: { primary: { background: "blue" }, secondary: { background: "gray" } },
-   *     size: { small: { fontSize: "0.875rem" }, large: { fontSize: "1.25rem" } },
-   *   },
-   *   defaultVariants: { color: "primary" },
-   * });
-   *
-   * button.with({ color: "secondary", size: "large" });
-   * // Returns: ".baseHash .secondaryHash .largeHash"
-   * ```
-   */
-  with(selection: RecipeVariantSelection<V> = {}): string {
-    const classNames: string[] = [this.name];
-
-    // Add variant class names
-    for (const [option, name] of Object.entries(selection)) {
-      const variants = this.variants[option];
-      const variant = variants[name];
-      classNames.push(variant.name);
-    }
-
-    // Check compound variants
-    for (let i = 0; i < this.compounds.length; i++) {
-      const compound = this.compounds[i];
-      const matches = Object.entries(compound.variants).every(
-        ([key, value]) => selection[key] === value,
-      );
-      if (matches) {
-        classNames.push(this.compounds[i].style.name);
-      }
-    }
-
-    return classNames.join(" ");
-  }
-}
-
-/**
- * Type guard to check if a value is a Recipe object.
- *
- * @since 0.5.0
- */
-export function isRecipe<V extends RecipeVariants>(
-  input: unknown,
-): input is Recipe<V> {
-  return (
-    input !== null && typeof input === "object" &&
-    Object.hasOwn(input, RecipeBrand)
-  );
-}
-
-/**
- * Create a recipe with multi-variant styles.
- *
- * @example
- * ```ts
- * const button = recipe({
- *   base: { borderRadius: "6px" },
- *   variants: {
- *     color: {
- *       neutral: { background: "gray" },
- *       brand: { background: "blue" },
- *     },
- *     size: {
- *       small: { padding: "0.5rem" },
- *       medium: { padding: "1rem" },
- *     },
- *   },
- *   compoundVariants: [
- *     {
- *       variants: { color: "brand", size: "large" },
- *       style: { fontWeight: "bold" },
- *     },
- *   ],
- *   defaultVariants: { color: "neutral", size: "medium" },
- * });
- *
- * // Get base class name
- * button.toString(); // ".abc123"
- *
- * // Get combined class names for variant selection
- * button.with({ color: "brand", size: "small" }); // ".abc123 .def456 .ghi789"
- * ```
- *
- * @since 0.5.0
- */
-export function recipe<V extends RecipeVariants>(
-  config: RecipeConfig<V>,
-): Recipe<V> {
-  const _recipe = new Recipe(config);
-  return _recipe;
+  const hash = hashObject(properties);
+  const name = `#${id}` as const;
+  const selector = compoundSelector(name);
+  return style(name, hash, selector, { properties, ...extra });
 }
