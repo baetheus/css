@@ -1,4 +1,4 @@
-import { assertEquals, assertStrictEquals } from "@std/assert";
+import { assertEquals } from "@std/assert";
 
 import {
   AtRule,
@@ -864,11 +864,22 @@ Deno.test("style - nest creates nested selector", () => {
   assertEquals(result.includes("&."), true);
 });
 
-Deno.test("style - with at-rules", () => {
-  const m = media("(min-width: 768px)");
+Deno.test("style - with at-rules nested inside selector", () => {
+  const m = media("(min-width: 768px)", { fontSize: "18px" });
   const s = style({ color: "red" }, { at: [m] });
   const result = s.render(STANDARD_RENDER, 0);
+  // At-rules should be nested inside the selector block
   assertEquals(result.includes("@media"), true);
+  // Check that the at-rule is indented (nested inside the selector)
+  assertEquals(result.includes("  @media (min-width: 768px)"), true);
+  // The structure should be: .hash { color: red; @media (...) { ... } }
+  const lines = result.split("\n");
+  // First line is the selector opening
+  assertEquals(lines[0].includes("{"), true);
+  // @media should come after the properties, indented
+  const mediaLineIndex = lines.findIndex((l) => l.includes("@media"));
+  assertEquals(mediaLineIndex > 0, true);
+  assertEquals(lines[mediaLineIndex].startsWith("  "), true);
 });
 
 Deno.test("isStyle - returns true for Style", () => {
@@ -1301,4 +1312,80 @@ Deno.test("renderAtRule - unknown tag returns empty string (defensive)", () => {
   } as unknown as { query: string; children: [] });
   const result = renderAtRule(rule, STANDARD_RENDER, 0);
   assertEquals(result, "");
+});
+
+// =============================================================================
+// At-Rule with Property Children Tests
+// =============================================================================
+
+Deno.test("@media - renders with Property child", () => {
+  const rule = media("(min-width: 768px)", { padding: "32px", color: "blue" });
+  const result = renderAtRule(rule, STANDARD_RENDER, 0);
+  assertEquals(result.includes("@media (min-width: 768px)"), true);
+  assertEquals(result.includes("padding: 32px;"), true);
+  assertEquals(result.includes("color: blue;"), true);
+});
+
+Deno.test("@media - renders with mixed Style and Property children", () => {
+  const s = style({ fontSize: "14px" });
+  const props = { padding: "16px" };
+  const rule = media("(min-width: 768px)", s, props);
+  const result = renderAtRule(rule, STANDARD_RENDER, 0);
+  assertEquals(result.includes("@media (min-width: 768px)"), true);
+  assertEquals(result.includes("font-size: 14px;"), true);
+  assertEquals(result.includes("padding: 16px;"), true);
+});
+
+Deno.test("@layer - renders with Property child", () => {
+  const rule = layer("utilities", { margin: "0", display: "flex" });
+  const result = renderAtRule(rule, STANDARD_RENDER, 0);
+  assertEquals(result.includes("@layer utilities"), true);
+  assertEquals(result.includes("margin: 0;"), true);
+  assertEquals(result.includes("display: flex;"), true);
+});
+
+Deno.test("@supports - renders with Property child", () => {
+  const rule = supports("(display: grid)", { display: "grid", gap: "1rem" });
+  const result = renderAtRule(rule, STANDARD_RENDER, 0);
+  assertEquals(result.includes("@supports (display: grid)"), true);
+  assertEquals(result.includes("display: grid;"), true);
+  assertEquals(result.includes("gap: 1rem;"), true);
+});
+
+Deno.test("@container - renders with Property child", () => {
+  const rule = container("(min-width: 400px)", { padding: "24px" });
+  const result = renderAtRule(rule, STANDARD_RENDER, 0);
+  assertEquals(result.includes("@container (min-width: 400px)"), true);
+  assertEquals(result.includes("padding: 24px;"), true);
+});
+
+Deno.test("@scope - renders with Property child", () => {
+  const rule = scope("(.card)", {
+    borderRadius: "8px",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+  });
+  const result = renderAtRule(rule, STANDARD_RENDER, 0);
+  assertEquals(result.includes("@scope (.card)"), true);
+  assertEquals(result.includes("border-radius: 8px;"), true);
+  assertEquals(result.includes("box-shadow: 0 2px 4px rgba(0,0,0,0.1);"), true);
+});
+
+Deno.test("@starting-style - renders with Property child", () => {
+  const rule = startingStyle({ opacity: "0", transform: "translateY(-10px)" });
+  const result = renderAtRule(rule, STANDARD_RENDER, 0);
+  assertEquals(result.includes("@starting-style"), true);
+  assertEquals(result.includes("opacity: 0;"), true);
+  assertEquals(result.includes("transform: translateY(-10px);"), true);
+});
+
+Deno.test("nested @media in @layer with Property children", () => {
+  const innerProps = { fontSize: "18px" };
+  const innerMedia = media("(min-width: 1024px)", innerProps);
+  const outerProps = { fontSize: "14px" };
+  const rule = layer("typography", outerProps, innerMedia);
+  const result = renderAtRule(rule, STANDARD_RENDER, 0);
+  assertEquals(result.includes("@layer typography"), true);
+  assertEquals(result.includes("font-size: 14px;"), true);
+  assertEquals(result.includes("@media (min-width: 1024px)"), true);
+  assertEquals(result.includes("font-size: 18px;"), true);
 });

@@ -154,22 +154,23 @@ export type CssValue = string | number;
  * } satisfies Shape;
  * ```
  *
- * @since 0.5.0
+ * @since 0.0.3
  */
-export type Shape = {
-  readonly [key: string]: null | Shape;
+export type Shape<T = null> = {
+  readonly [key: string]: T | Shape<T>;
 };
 
 /**
  * Recursively transform a Shape to have var() references at each null leaf.
  *
- * @since 0.5.0
+ * @since 0.0.3
  */
-type VarShape<T extends Shape> = {
-  readonly [K in keyof T]: T[K] extends null ? VariableValue
-    : T[K] extends Shape ? VarShape<T[K]>
-    : never;
-};
+type MapShape<T, I> = T extends Shape<infer A> ? {
+    readonly [K in keyof T]: T[K] extends A ? I
+      : T[K] extends Shape<A> ? MapShape<T[K], I>
+      : never;
+  }
+  : never;
 
 const ContractHash: unique symbol = Symbol("@baetheus/css/core/contract");
 
@@ -177,31 +178,49 @@ const ContractHash: unique symbol = Symbol("@baetheus/css/core/contract");
  * Contract type - the result of the contract function.
  * Contains var() references for each variable and a non-enumerable hash.
  *
- * @since 0.5.0
+ * @since 0.0.3
  */
-export type Contract<T extends Shape> = VarShape<T> & {
+export type Contract<T extends Shape> = MapShape<T, VariableValue> & {
   readonly [ContractHash]: string;
 };
+
+/**
+ * Recursively walks a shape, calling onLeaf for each leaf value.
+ * @internal
+ */
+function walkShape<A, T extends Shape<A>, I>(
+  shape: T,
+  isLeaf: (value: A | Shape<A>) => value is A,
+  onLeaf: (value: A, path: string[]) => I,
+  path: string[] = [],
+): MapShape<T, I> {
+  const out: Record<string, unknown> = {};
+  for (const key in shape) {
+    const value = shape[key];
+    const _path = [...path, key];
+    if (isLeaf(value)) {
+      const _value = onLeaf(value, _path);
+      out[key] = _value;
+    } else {
+      out[key] = walkShape(value as Shape<A>, isLeaf, onLeaf, _path);
+    }
+  }
+  return out as MapShape<T, I>;
+}
 
 /**
  * Recursively builds var() references for a shape.
  * @internal
  */
-function buildVarShape(
-  shape: Shape,
+function buildVarShape<T extends Shape>(
+  shape: T,
   hash: string,
-  path: string[] = [],
-): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(shape)) {
-    const currentPath = [...path, key];
-    if (value === null) {
-      result[key] = `var(--${hash}-${currentPath.join("-")})`;
-    } else {
-      result[key] = buildVarShape(value, hash, currentPath);
-    }
-  }
-  return result;
+): MapShape<T, VariableValue> {
+  return walkShape(
+    shape,
+    (v) => v === null,
+    (_, path) => `var(--${hash}-${path.join("-")})` as VariableValue,
+  );
 }
 
 /**
@@ -251,11 +270,11 @@ function buildVarShape(
  * console.log(render([lightTheme, button]));
  * ```
  *
- * @since 0.5.0
+ * @since 0.0.3
  */
 export function contract<T extends Shape>(shape: T): Contract<T> {
   const hash = hashObject(shape);
-  const result = buildVarShape(shape, hash) as VarShape<T>;
+  const result = buildVarShape(shape, hash);
 
   Object.defineProperty(result, ContractHash, {
     value: hash,
@@ -273,7 +292,7 @@ export function contract<T extends Shape>(shape: T): Contract<T> {
  * @param value - The value to check
  * @returns `true` if the value is a Contract, `false` otherwise
  *
- * @since 0.5.0
+ * @since 0.0.3
  */
 export function isContract(value: unknown): value is Contract<Shape> {
   return typeof value === "object" && value !== null && ContractHash in value;
@@ -282,7 +301,7 @@ export function isContract(value: unknown): value is Contract<Shape> {
 /**
  * Recursively transform a Shape to have CssValue at each null leaf.
  *
- * @since 0.5.0
+ * @since 0.0.3
  */
 export type VarsValues<T extends Shape> = {
   readonly [K in keyof T]: T[K] extends null ? CssValue
@@ -294,26 +313,18 @@ export type VarsValues<T extends Shape> = {
  * Recursively builds CSS custom properties from values.
  * @internal
  */
-function buildProperties(
-  values: Record<string, unknown>,
+function buildProperties<T extends Shape<CssValue>>(
+  shape: T,
   hash: string,
-  path: string[] = [],
-  properties: Record<string, CssValue> = {},
-): Record<string, CssValue> {
-  for (const [key, value] of Object.entries(values)) {
-    const currentPath = [...path, key];
-    if (typeof value === "object" && value !== null) {
-      buildProperties(
-        value as Record<string, unknown>,
-        hash,
-        currentPath,
-        properties,
-      );
-    } else {
-      properties[`--${hash}-${currentPath.join("-")}`] = value as CssValue;
-    }
-  }
-  return properties;
+): Readonly<Record<string, CssValue>> {
+  const result: Record<string, CssValue> = {};
+  walkShape(
+    shape,
+    (v: CssValue | Shape<CssValue>): v is CssValue =>
+      typeof v === "string" || typeof v === "number",
+    (value, path) => result[`--${hash}-${path.join("-")}`] = value,
+  );
+  return result;
 }
 
 /**
@@ -358,7 +369,7 @@ function buildProperties(
  * // Outputs: --hash-colors-primary: blue; --hash-colors-brand-light: #eef; etc.
  * ```
  *
- * @since 0.5.0
+ * @since 0.0.3
  */
 export function vars<T extends Shape>(
   contract: Contract<T>,
@@ -418,7 +429,7 @@ type HtmlElement =
 /**
  * Simple pseudo-class selectors that take no arguments.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 // deno-fmt-ignore
 type PseudoClassValue =
@@ -453,7 +464,7 @@ type PseudoClassValue =
 /**
  * Parameterized pseudo-class selectors using template literals.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 type FunctionClassValue =
   | `:nth-child(${string})`
@@ -473,7 +484,7 @@ type FunctionClassValue =
 /**
  * Pseudo-element selectors.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 type PseudoElementValue =
   | "::before"
@@ -500,28 +511,28 @@ type PseudoElementValue =
 /**
  * Class selector (e.g., `.button`).
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 type ClassSelector = `.${string}`;
 
 /**
  * ID selector (e.g., `#main`).
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 type IdSelector = `#${string}`;
 
 /**
  * Universal selector.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 type UniversalSelector = "*";
 
 /**
  * Parent/nesting selector.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 type ParentSelector = "&";
 
@@ -531,7 +542,7 @@ type HtmlAttributes = CSS.HtmlAttributes extends `[${infer Attr}]` ? Attr
 /**
  * Attribute selector with optional operator and value.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 type AttributeSelector =
   | `[${HtmlAttributes}]`
@@ -545,14 +556,14 @@ type AttributeSelector =
 /**
  * CSS selector combinators.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 type SelectorCombinator = " " | ">" | "+" | "~";
 
 /**
  * All possible values in a selector's values array.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 type SelectorValue =
   | HtmlElement
@@ -819,24 +830,45 @@ export function renderKeyframes(
 }
 
 /**
+ * Generic descriptor renderer for at-rules with key-value properties.
+ * @internal
+ */
+function renderDescriptors(
+  descriptors: Record<string, unknown>,
+  propMap: readonly (readonly [string, string])[],
+  options: RenderOptions,
+  depth: number,
+): string {
+  const indent = options.indent.repeat(depth);
+  const entries: string[] = [];
+  for (const [key, cssName] of propMap) {
+    const value = descriptors[key];
+    if (value !== undefined) {
+      entries.push(`${indent}${cssName}:${options.space}${value};`);
+    }
+  }
+  return entries.join(options.newline);
+}
+
+const FONT_FACE_PROPS = [
+  ["fontFamily", "font-family"],
+  ["src", "src"],
+  ["fontStyle", "font-style"],
+  ["fontWeight", "font-weight"],
+  ["fontStretch", "font-stretch"],
+  ["fontDisplay", "font-display"],
+  ["unicodeRange", "unicode-range"],
+  ["fontVariant", "font-variant"],
+  ["fontFeatureSettings", "font-feature-settings"],
+  ["fontVariationSettings", "font-variation-settings"],
+  ["ascentOverride", "ascent-override"],
+  ["descentOverride", "descent-override"],
+  ["lineGapOverride", "line-gap-override"],
+  ["sizeAdjust", "size-adjust"],
+] as const;
+
+/**
  * Renders font-face descriptor properties for a @font-face at-rule.
- *
- * @param properties - The font-face descriptor properties
- * @param options - Render options for formatting
- * @param depth - The indentation depth
- * @returns The formatted font-face body string
- *
- * @example
- * ```ts
- * import { renderFontFace, STANDARD_RENDER } from "./css.ts";
- *
- * const css = renderFontFace({
- *   fontFamily: "MyFont",
- *   src: "url('font.woff2')",
- *   fontWeight: "400",
- * }, STANDARD_RENDER, 1);
- * ```
- *
  * @since 0.0.2
  */
 export function renderFontFace(
@@ -844,98 +876,11 @@ export function renderFontFace(
   options: RenderOptions = STANDARD_RENDER,
   depth: number = 0,
 ): string {
-  const indent = options.indent.repeat(depth);
-  const entries: string[] = [];
-  if (properties.fontFamily !== undefined) {
-    entries.push(
-      `${indent}font-family:${options.space}${properties.fontFamily};`,
-    );
-  }
-  if (properties.src !== undefined) {
-    entries.push(`${indent}src:${options.space}${properties.src};`);
-  }
-  if (properties.fontStyle !== undefined) {
-    entries.push(
-      `${indent}font-style:${options.space}${properties.fontStyle};`,
-    );
-  }
-  if (properties.fontWeight !== undefined) {
-    entries.push(
-      `${indent}font-weight:${options.space}${properties.fontWeight};`,
-    );
-  }
-  if (properties.fontStretch !== undefined) {
-    entries.push(
-      `${indent}font-stretch:${options.space}${properties.fontStretch};`,
-    );
-  }
-  if (properties.fontDisplay !== undefined) {
-    entries.push(
-      `${indent}font-display:${options.space}${properties.fontDisplay};`,
-    );
-  }
-  if (properties.unicodeRange !== undefined) {
-    entries.push(
-      `${indent}unicode-range:${options.space}${properties.unicodeRange};`,
-    );
-  }
-  if (properties.fontVariant !== undefined) {
-    entries.push(
-      `${indent}font-variant:${options.space}${properties.fontVariant};`,
-    );
-  }
-  if (properties.fontFeatureSettings !== undefined) {
-    entries.push(
-      `${indent}font-feature-settings:${options.space}${properties.fontFeatureSettings};`,
-    );
-  }
-  if (properties.fontVariationSettings !== undefined) {
-    entries.push(
-      `${indent}font-variation-settings:${options.space}${properties.fontVariationSettings};`,
-    );
-  }
-  if (properties.ascentOverride !== undefined) {
-    entries.push(
-      `${indent}ascent-override:${options.space}${properties.ascentOverride};`,
-    );
-  }
-  if (properties.descentOverride !== undefined) {
-    entries.push(
-      `${indent}descent-override:${options.space}${properties.descentOverride};`,
-    );
-  }
-  if (properties.lineGapOverride !== undefined) {
-    entries.push(
-      `${indent}line-gap-override:${options.space}${properties.lineGapOverride};`,
-    );
-  }
-  if (properties.sizeAdjust !== undefined) {
-    entries.push(
-      `${indent}size-adjust:${options.space}${properties.sizeAdjust};`,
-    );
-  }
-  return entries.join(options.newline);
+  return renderDescriptors(properties, FONT_FACE_PROPS, options, depth);
 }
 
 /**
  * Renders property descriptors for a @property at-rule.
- *
- * @param descriptors - The property descriptors (syntax, inherits, initialValue)
- * @param options - Render options for formatting
- * @param depth - The indentation depth
- * @returns The formatted @property body string
- *
- * @example
- * ```ts
- * import { renderPropertyDescriptors, STANDARD_RENDER } from "./css.ts";
- *
- * const css = renderPropertyDescriptors({
- *   syntax: "<color>",
- *   inherits: false,
- *   initialValue: "red",
- * }, STANDARD_RENDER, 1);
- * ```
- *
  * @since 0.0.2
  */
 export function renderPropertyDescriptors(
@@ -945,6 +890,7 @@ export function renderPropertyDescriptors(
 ): string {
   const indent = options.indent.repeat(depth);
   const entries: string[] = [];
+  // syntax requires quotes
   entries.push(`${indent}syntax:${options.space}"${descriptors.syntax}";`);
   entries.push(`${indent}inherits:${options.space}${descriptors.inherits};`);
   if (descriptors.initialValue !== undefined) {
@@ -955,25 +901,21 @@ export function renderPropertyDescriptors(
   return entries.join(options.newline);
 }
 
+const COUNTER_STYLE_PROPS = [
+  ["system", "system"],
+  ["symbols", "symbols"],
+  ["additiveSymbols", "additive-symbols"],
+  ["negative", "negative"],
+  ["prefix", "prefix"],
+  ["suffix", "suffix"],
+  ["range", "range"],
+  ["pad", "pad"],
+  ["fallback", "fallback"],
+  ["speakAs", "speak-as"],
+] as const;
+
 /**
  * Renders counter style descriptors for a @counter-style at-rule.
- *
- * @param descriptors - The counter style descriptors
- * @param options - Render options for formatting
- * @param depth - The indentation depth
- * @returns The formatted @counter-style body string
- *
- * @example
- * ```ts
- * import { renderCounterStyle, STANDARD_RENDER } from "./css.ts";
- *
- * const css = renderCounterStyle({
- *   system: "cyclic",
- *   symbols: "'*' '†' '‡'",
- *   suffix: " ",
- * }, STANDARD_RENDER, 1);
- * ```
- *
  * @since 0.0.2
  */
 export function renderCounterStyle(
@@ -981,41 +923,7 @@ export function renderCounterStyle(
   options: RenderOptions = STANDARD_RENDER,
   depth: number = 0,
 ): string {
-  const indent = options.indent.repeat(depth);
-  const entries: string[] = [];
-  if (descriptors.system !== undefined) {
-    entries.push(`${indent}system:${options.space}${descriptors.system};`);
-  }
-  if (descriptors.symbols !== undefined) {
-    entries.push(`${indent}symbols:${options.space}${descriptors.symbols};`);
-  }
-  if (descriptors.additiveSymbols !== undefined) {
-    entries.push(
-      `${indent}additive-symbols:${options.space}${descriptors.additiveSymbols};`,
-    );
-  }
-  if (descriptors.negative !== undefined) {
-    entries.push(`${indent}negative:${options.space}${descriptors.negative};`);
-  }
-  if (descriptors.prefix !== undefined) {
-    entries.push(`${indent}prefix:${options.space}${descriptors.prefix};`);
-  }
-  if (descriptors.suffix !== undefined) {
-    entries.push(`${indent}suffix:${options.space}${descriptors.suffix};`);
-  }
-  if (descriptors.range !== undefined) {
-    entries.push(`${indent}range:${options.space}${descriptors.range};`);
-  }
-  if (descriptors.pad !== undefined) {
-    entries.push(`${indent}pad:${options.space}${descriptors.pad};`);
-  }
-  if (descriptors.fallback !== undefined) {
-    entries.push(`${indent}fallback:${options.space}${descriptors.fallback};`);
-  }
-  if (descriptors.speakAs !== undefined) {
-    entries.push(`${indent}speak-as:${options.space}${descriptors.speakAs};`);
-  }
-  return entries.join(options.newline);
+  return renderDescriptors(descriptors, COUNTER_STYLE_PROPS, options, depth);
 }
 
 /**
@@ -1066,22 +974,6 @@ export function renderFontFeatureValues(
 
 /**
  * Renders font palette descriptors for a @font-palette-values at-rule.
- *
- * @param descriptors - The font palette descriptors
- * @param options - Render options for formatting
- * @param depth - The indentation depth
- * @returns The formatted @font-palette-values body string
- *
- * @example
- * ```ts
- * import { renderFontPalette, STANDARD_RENDER } from "./css.ts";
- *
- * const css = renderFontPalette({
- *   basePalette: 0,
- *   overrideColors: { 0: "red", 1: "blue" },
- * }, STANDARD_RENDER, 1);
- * ```
- *
  * @since 0.0.2
  */
 export function renderFontPalette(
@@ -1105,24 +997,14 @@ export function renderFontPalette(
   return entries.join(options.newline);
 }
 
+const COLOR_PROFILE_PROPS = [
+  ["src", "src"],
+  ["renderingIntent", "rendering-intent"],
+  ["components", "components"],
+] as const;
+
 /**
  * Renders color profile descriptors for a @color-profile at-rule.
- *
- * @param descriptors - The color profile descriptors
- * @param options - Render options for formatting
- * @param depth - The indentation depth
- * @returns The formatted @color-profile body string
- *
- * @example
- * ```ts
- * import { renderColorProfile, STANDARD_RENDER } from "./css.ts";
- *
- * const css = renderColorProfile({
- *   src: "url('profile.icc')",
- *   renderingIntent: "relative-colorimetric",
- * }, STANDARD_RENDER, 1);
- * ```
- *
  * @since 0.0.2
  */
 export function renderColorProfile(
@@ -1130,68 +1012,19 @@ export function renderColorProfile(
   options: RenderOptions = STANDARD_RENDER,
   depth: number = 0,
 ): string {
-  const indent = options.indent.repeat(depth);
-  const entries: string[] = [];
-  entries.push(`${indent}src:${options.space}${descriptors.src};`);
-  if (descriptors.renderingIntent !== undefined) {
-    entries.push(
-      `${indent}rendering-intent:${options.space}${descriptors.renderingIntent};`,
-    );
-  }
-  if (descriptors.components !== undefined) {
-    entries.push(
-      `${indent}components:${options.space}${descriptors.components};`,
-    );
-  }
-  return entries.join(options.newline);
-}
-
-function getSelectorKindFromString(value: string): SelectorKind {
-  if (value === "*") return "universal";
-  if (value === "&") return "parent";
-  if (value.startsWith(".")) return "class";
-  if (value.startsWith("#")) return "id";
-  if (value.startsWith("[")) return "attribute";
-  if (value.startsWith("::")) return "pseudo-element";
-  if (value.startsWith(":") && value.includes("(")) return "function-class";
-  if (value.startsWith(":")) return "pseudo-class";
-  return "html";
-}
-
-function getSelectorKind(selector: Selector): SelectorKind {
-  const first = selector.values[0];
-  if (typeof first === "object" && first !== null && "type" in first) {
-    return getSelectorKind(first);
-  }
-  return getSelectorKindFromString(first);
+  return renderDescriptors(descriptors, COLOR_PROFILE_PROPS, options, depth);
 }
 
 function isNestableSelector(selector: Selector): boolean {
-  switch (getSelectorKind(selector)) {
-    case "html":
-    case "universal":
-    case "parent":
-      return false;
-    default:
-      return true;
+  const first = selector.values[0];
+  if (typeof first === "object" && "type" in first) {
+    return isNestableSelector(first);
   }
+  // Nestable: starts with . # [ : (class, id, attribute, pseudo)
+  // Not nestable: * & or lowercase letter (universal, parent, html element)
+  return first.startsWith(".") || first.startsWith("#") ||
+    first.startsWith("[") || first.startsWith(":");
 }
-
-/**
- * String representations of all selector types.
- *
- * @since 0.4.0
- */
-type SelectorKind =
-  | "html"
-  | "class"
-  | "id"
-  | "universal"
-  | "parent"
-  | "attribute"
-  | "pseudo-class"
-  | "function-class"
-  | "pseudo-element";
 
 // =============================================================================
 // AtRule Types
@@ -1200,7 +1033,7 @@ type SelectorKind =
 /**
  * Union of all at-rule tags.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 export type AtRuleTag =
   | "@media"
@@ -1224,14 +1057,14 @@ export type AtRuleTag =
 /**
  * Keyframe offset values.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 export type KeyframeOffset = "from" | "to" | `${number}%`;
 
 /**
  * Keyframe properties - frames with offset and CSS properties.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 export type KeyframeProperties = readonly {
   readonly offset: KeyframeOffset;
@@ -1241,7 +1074,7 @@ export type KeyframeProperties = readonly {
 /**
  * Font-face descriptor properties.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 export type FontFaceProperties = {
   readonly fontFamily?: string;
@@ -1263,14 +1096,14 @@ export type FontFaceProperties = {
 /**
  * Page pseudo-classes for @page rules.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 export type PagePseudo = ":first" | ":last" | ":left" | ":right" | ":blank";
 
 /**
  * Property descriptor for @property at-rule.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 export type PropertyDescriptors = {
   readonly syntax: string;
@@ -1281,7 +1114,7 @@ export type PropertyDescriptors = {
 /**
  * Counter style system values for @counter-style.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 export type CounterStyleSystem =
   | "cyclic"
@@ -1296,7 +1129,7 @@ export type CounterStyleSystem =
 /**
  * Counter style descriptors for @counter-style at-rule.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 export type CounterStyleDescriptors = {
   readonly system?: CounterStyleSystem;
@@ -1314,7 +1147,7 @@ export type CounterStyleDescriptors = {
 /**
  * Font feature value types for @font-feature-values.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 export type FontFeatureValueType =
   | "stylistic"
@@ -1327,7 +1160,7 @@ export type FontFeatureValueType =
 /**
  * Font feature values descriptors for @font-feature-values at-rule.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 export type FontFeatureValuesDescriptors = Partial<
   Record<FontFeatureValueType, Record<string, number[]>>
@@ -1336,7 +1169,7 @@ export type FontFeatureValuesDescriptors = Partial<
 /**
  * Font palette descriptors for @font-palette-values at-rule.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 export type FontPaletteDescriptors = {
   readonly basePalette?: number | "light" | "dark";
@@ -1346,7 +1179,7 @@ export type FontPaletteDescriptors = {
 /**
  * Rendering intent for @color-profile.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 export type ColorProfileRenderingIntent =
   | "relative-colorimetric"
@@ -1357,7 +1190,7 @@ export type ColorProfileRenderingIntent =
 /**
  * Color profile descriptors for @color-profile at-rule.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 export type ColorProfileDescriptors = {
   readonly src: string;
@@ -1368,7 +1201,7 @@ export type ColorProfileDescriptors = {
 /**
  * Map of at-rule tags to their query type (content between tag and `{` or `;`).
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 type AtRuleQueries = {
   "@media": string;
@@ -1393,7 +1226,7 @@ type AtRuleQueries = {
 /**
  * Map of at-rule tags to their properties type (content inside the block).
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 type AtRuleProperties = {
   "@media": undefined;
@@ -1419,24 +1252,25 @@ type AtRuleProperties = {
  * Map of at-rule tags to their children type.
  *
  * Based on CSS nesting rules - each at-rule can only contain specific
- * nested at-rules and style rules.
+ * nested at-rules and style rules. When nested under a selector,
+ * some at-rules can also contain direct Property declarations.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 // deno-fmt-ignore
 type AtRuleChildren = {
   "@media": AtRule<"@media" | "@supports" | "@scope" | "@starting-style"
-    | "@container" | "@layer" | "@font-face" | "@keyframes"> | Style;
+    | "@container" | "@layer" | "@font-face" | "@keyframes"> | Style | Property;
 
   "@supports": AtRule<"@media" | "@supports" | "@scope" | "@starting-style"
-    | "@container" | "@layer" | "@font-face"> | Style;
+    | "@container" | "@layer" | "@font-face"> | Style | Property;
 
   "@container": AtRule<"@media" | "@supports" | "@scope" | "@starting-style"
-    | "@layer"> | Style;
+    | "@layer"> | Style | Property;
 
   "@layer": AtRule<"@media" | "@supports" | "@scope" | "@starting-style"
     | "@container" | "@layer" | "@font-face" | "@keyframes" | "@page"
-    | "@property" | "@counter-style"> | Style;
+    | "@property" | "@counter-style"> | Style | Property;
 
   "@keyframes": undefined;
   "@font-face": undefined;
@@ -1446,9 +1280,9 @@ type AtRuleChildren = {
   "@page": undefined;
   "@property": undefined;
   "@scope": AtRule<"@media" | "@supports" | "@scope" | "@starting-style"
-    | "@container"> | Style;
+    | "@container"> | Style | Property;
 
-  "@starting-style": Style;
+  "@starting-style": Style | Property;
   "@counter-style": undefined;
   "@font-feature-values": undefined;
   "@font-palette-values": undefined;
@@ -1530,36 +1364,51 @@ export function isAtRule(value: unknown): value is AtRule {
 }
 
 function renderAtRuleChild(
-  child: AtRule | Style,
+  child: AtRule | Style | Property,
   options: RenderOptions,
   depth: number,
 ): string {
   if (isAtRule(child)) {
     return renderAtRule(child, options, depth);
   }
-  return (child as Style).render(options, depth);
+  if (isStyle(child)) {
+    return child.render(options, depth);
+  }
+  // Property - render as direct declarations
+  return renderProperties(child, options, depth);
 }
+
+type PropertyRenderer = (
+  // deno-lint-ignore no-explicit-any
+  props: any,
+  opts: RenderOptions,
+  depth: number,
+) => string;
+
+const PROPERTY_RENDERERS: Partial<Record<AtRuleTag, PropertyRenderer>> = {
+  "@keyframes": renderKeyframes,
+  "@font-face": renderFontFace,
+  "@page": renderProperties,
+  "@property": renderPropertyDescriptors,
+  "@counter-style": renderCounterStyle,
+  "@font-feature-values": renderFontFeatureValues,
+  "@font-palette-values": renderFontPalette,
+  "@color-profile": renderColorProfile,
+};
+
+const STATEMENT_RULES = new Set(["@import", "@charset", "@namespace"]);
+
+const CHILDREN_RULES = new Set([
+  "@media",
+  "@supports",
+  "@container",
+  "@layer",
+  "@scope",
+  "@starting-style",
+]);
 
 /**
  * Renders an AtRule to its CSS string representation.
- *
- * Handles all CSS at-rule types including statement rules (@import, @charset, @namespace)
- * and block rules (@media, @keyframes, @font-face, etc.).
- *
- * @param rule - The AtRule to render
- * @param options - Render options for formatting
- * @param depth - The indentation depth
- * @returns The formatted CSS at-rule string
- *
- * @example
- * ```ts
- * import { media, style, renderAtRule, STANDARD_RENDER } from "./css.ts";
- *
- * const s = style({ color: "red" });
- * const m = media("(min-width: 768px)", s);
- * console.log(renderAtRule(m, STANDARD_RENDER));
- * ```
- *
  * @since 0.0.2
  */
 export function renderAtRule(
@@ -1570,125 +1419,39 @@ export function renderAtRule(
   const indent = options.indent.repeat(depth);
   const opts = rule.options as Record<string, unknown>;
   const query = opts.query as string | undefined;
-  const properties = opts.properties;
-  const children = opts.children as (AtRule | Style)[] | undefined;
 
   // Statement at-rules (no block)
-  switch (rule.tag) {
-    case "@import":
-    case "@charset":
-    case "@namespace":
-      return `${indent}${rule.tag}${options.space}${query};`;
+  if (STATEMENT_RULES.has(rule.tag)) {
+    return `${indent}${rule.tag}${options.space}${query};`;
   }
 
-  // Block at-rules
   const prelude = query !== undefined
     ? `${rule.tag}${options.space}${query}`
     : rule.tag;
 
-  switch (rule.tag) {
-    case "@keyframes":
-      return renderBlock(
-        prelude,
-        renderKeyframes(properties as KeyframeProperties, options, depth + 1),
-        options,
-        depth,
-      );
-
-    case "@font-face":
-      return renderBlock(
-        prelude,
-        renderFontFace(properties as FontFaceProperties, options, depth + 1),
-        options,
-        depth,
-      );
-
-    case "@page": {
-      return renderBlock(
-        prelude,
-        renderProperties(properties as Property, options, depth + 1),
-        options,
-        depth,
-      );
-    }
-
-    case "@property":
-      return renderBlock(
-        prelude,
-        renderPropertyDescriptors(
-          properties as PropertyDescriptors,
-          options,
-          depth + 1,
-        ),
-        options,
-        depth,
-      );
-
-    case "@counter-style":
-      return renderBlock(
-        prelude,
-        renderCounterStyle(
-          properties as CounterStyleDescriptors,
-          options,
-          depth + 1,
-        ),
-        options,
-        depth,
-      );
-
-    case "@font-feature-values":
-      return renderBlock(
-        prelude,
-        renderFontFeatureValues(
-          properties as FontFeatureValuesDescriptors,
-          options,
-          depth + 1,
-        ),
-        options,
-        depth,
-      );
-
-    case "@font-palette-values":
-      return renderBlock(
-        prelude,
-        renderFontPalette(
-          properties as FontPaletteDescriptors,
-          options,
-          depth + 1,
-        ),
-        options,
-        depth,
-      );
-
-    case "@color-profile":
-      return renderBlock(
-        prelude,
-        renderColorProfile(
-          properties as ColorProfileDescriptors,
-          options,
-          depth + 1,
-        ),
-        options,
-        depth,
-      );
-
-    case "@media":
-    case "@supports":
-    case "@container":
-    case "@layer":
-    case "@scope":
-    case "@starting-style": {
-      const body = children
-        ? children.map((c) => renderAtRuleChild(c, options, depth + 1)).join(
-          options.newline,
-        )
-        : "";
-      return renderBlock(prelude, body, options, depth);
-    }
-
-    default:
-      return "";
+  // Property-based at-rules
+  const renderer = PROPERTY_RENDERERS[rule.tag];
+  if (renderer) {
+    return renderBlock(
+      prelude,
+      renderer(opts.properties, options, depth + 1),
+      options,
+      depth,
+    );
   }
+
+  // Children-based at-rules
+  if (CHILDREN_RULES.has(rule.tag)) {
+    const children = opts.children as (AtRule | Style | Property)[] | undefined;
+    const body = children
+      ? children.map((c) => renderAtRuleChild(c, options, depth + 1)).join(
+        options.newline,
+      )
+      : "";
+    return renderBlock(prelude, body, options, depth);
+  }
+
+  return "";
 }
 
 // =============================================================================
@@ -1823,7 +1586,7 @@ export function scope(
 /**
  * Creates an @starting-style at-rule for entry animations.
  *
- * @param children - Child styles for the starting state
+ * @param children - Child styles or properties for the starting state
  * @returns An AtRule instance for @starting-style
  *
  * @example
@@ -1833,12 +1596,16 @@ export function scope(
  * const initial = style({ opacity: "0" });
  * const rule = startingStyle(initial);
  * console.log(render([rule]));
+ *
+ * // Or with direct properties (when nested under a selector)
+ * const direct = startingStyle({ opacity: "0", transform: "scale(0.9)" });
+ * console.log(render([direct]));
  * ```
  *
  * @since 0.0.2
  */
 export function startingStyle(
-  ...children: Style[]
+  ...children: AtRuleChildren["@starting-style"][]
 ): AtRule<"@starting-style"> {
   return new AtRule("@starting-style", { children });
 }
@@ -2141,7 +1908,7 @@ function djb2(str: string): number {
  * hashObject([1, 2, 3]);         // "x7y8z9a"
  * ```
  *
- * @since 0.1.0
+ * @since 0.0.3
  */
 function hashObject(input: unknown): string {
   const content = JSON.stringify(input);
@@ -2154,7 +1921,7 @@ const StyleBrand: unique symbol = Symbol("@baetheus/css/core/style");
 /**
  * At-rules that can be nested inside a style rule.
  *
- * @since 0.4.0
+ * @since 0.0.3
  */
 export type StyleNestedAtRuleTag =
   | "@media"
@@ -2248,11 +2015,23 @@ class BaseStyle<
   render(options: RenderOptions = STANDARD_RENDER, depth: number = 0): string {
     const parts: string[] = [];
 
-    // Render main style block
+    // Build the main style block body with properties and nested at-rules
+    const bodyParts: string[] = [];
     const propsBody = renderProperties(this.#properties, options, depth + 1);
     if (propsBody !== "") {
+      bodyParts.push(propsBody);
+    }
+
+    // Nest at-rules inside the selector block
+    for (const atrule of this.#atrules) {
+      bodyParts.push(atrule.render(options, depth + 1));
+    }
+
+    // Render main style block if there's any content
+    const body = bodyParts.join(options.newline);
+    if (body !== "") {
       parts.push(
-        renderBlock(renderSelector(this.#selector), propsBody, options, depth),
+        renderBlock(renderSelector(this.#selector), body, options, depth),
       );
     }
 
@@ -2264,11 +2043,6 @@ class BaseStyle<
     // Render children
     for (const child of Object.values(this.#children)) {
       parts.push((child as Style).render(options, depth));
-    }
-
-    // Render nested at-rules
-    for (const atrule of this.#atrules) {
-      parts.push(atrule.render(options, depth));
     }
 
     return parts.filter((p) => p !== "").join(options.newline);
