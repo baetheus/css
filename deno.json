@@ -1,15 +1,10 @@
 {
   "name": "@baetheus/css",
-  "version": "0.0.1",
-  "exports": {
-    "./ast": "./ast.ts",
-    "./core": "./core.ts"
-  },
-  "tasks": {
-    "dev": "deno run --watch main.ts"
+  "version": "0.0.2",
+  "exports": 
+    ".": "./css.ts"
   },
   "imports": {
-    "@baetheus/fun": "jsr:@baetheus/fun@^3.0.0-rc.9",
     "@std/assert": "jsr:@std/assert@1",
     "csstype": "npm:csstype@^3.2.3"
   }
