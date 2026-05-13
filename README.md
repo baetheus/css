@@ -1,4 +1,4 @@
-# @baetheus/css [![JSR](https://jsr.io/badges/@baetheus/css)](https://jsr.io/@baetheus/css)
+# @baetheus/css [![Coverage Status](https://coveralls.io/repos/github/baetheus/css/badge.svg?branch=main)](https://coveralls.io/github/baetheus/css?branch=main) [![JSR](https://jsr.io/badges/@baetheus/css)](https://jsr.io/@baetheus/css)
 
 A type-safe CSS-in-TypeScript library for Deno with scoped styles, theming, and
 a complete CSS at-rule system.
