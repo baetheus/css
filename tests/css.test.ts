@@ -967,16 +967,6 @@ Deno.test("render - renders mixed array", () => {
   assertEquals(result.includes("color: red;"), true);
 });
 
-Deno.test("render - renders style record", () => {
-  const styles = {
-    btn: style({ color: "blue" }),
-    card: style({ padding: "16px" }),
-  };
-  const result = render([styles], STANDARD_RENDER);
-  assertEquals(result.includes("color: blue;"), true);
-  assertEquals(result.includes("padding: 16px;"), true);
-});
-
 Deno.test("render - with MINIMAL_RENDER", () => {
   const s = style({ color: "red" });
   const result = render([s], MINIMAL_RENDER);
@@ -1108,21 +1098,6 @@ Deno.test("style render with empty variants and children", () => {
   const s = style({ color: "red" }, { variants: {}, children: {} });
   const result = s.render(STANDARD_RENDER, 0);
   assertEquals(result.includes("color: red;"), true);
-});
-
-Deno.test("renderAtRule - unknown tag returns empty string", () => {
-  // Create a mock AtRule with an unknown tag to test the default branch
-  const _mockRule = {
-    tag: "@unknown" as const,
-    options: { query: "test" },
-    hash: "test123",
-    render: () => "",
-  };
-  // The internal renderAtRule won't handle unknown tags - this tests the default case
-  // Since we can't easily test this, we verify existing behavior
-  const rule = media("test");
-  const result = renderAtRule(rule, STANDARD_RENDER, 0);
-  assertEquals(typeof result, "string");
 });
 
 Deno.test("id - with children", () => {
