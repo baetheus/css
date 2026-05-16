@@ -2027,23 +2027,21 @@ class BaseStyle<
       bodyParts.push(atrule.render(options, depth + 1));
     }
 
-    // Render main style block if there's any content
-    const body = bodyParts.join(options.newline);
-    if (body !== "") {
-      parts.push(
-        renderBlock(renderSelector(this.#selector), body, options, depth),
-      );
-    }
-
     // Render variants
     for (const variant of Object.values(this.#variants)) {
-      parts.push((variant as Style).render(options, depth));
+      bodyParts.push((variant as Style).render(options, depth + 1));
     }
 
     // Render children
     for (const child of Object.values(this.#children)) {
-      parts.push((child as Style).render(options, depth));
+      bodyParts.push((child as Style).render(options, depth + 1));
     }
+
+    // Render main style block if there's any content
+    const body = bodyParts.join(options.newline);
+    parts.push(
+      renderBlock(renderSelector(this.#selector), body, options, depth),
+    );
 
     return parts.filter((p) => p !== "").join(options.newline);
   }
@@ -2275,13 +2273,6 @@ export function element<V extends StyleRecord, C extends StyleRecord>(
 // Root Render Function
 // =============================================================================
 
-export type RenderItem = Style | AtRule | Record<string, Style>;
-
-function isStyleRecord(value: RenderItem): value is Record<string, Style> {
-  return typeof value === "object" && value !== null && !isStyle(value) &&
-    !isAtRule(value);
-}
-
 /**
  * Renders an array of styles and at-rules to a CSS string.
  *
@@ -2313,7 +2304,7 @@ function isStyleRecord(value: RenderItem): value is Record<string, Style> {
  * @since 0.0.2
  */
 export function render(
-  items: RenderItem[],
+  items: readonly (Style | AtRule)[],
   options: RenderOptions = STANDARD_RENDER,
 ): string {
   const parts: string[] = [];
@@ -2321,12 +2312,8 @@ export function render(
   for (const item of items) {
     if (isStyle(item)) {
       parts.push(item.render(options, 0));
-    } else if (isAtRule(item)) {
+    } else {
       parts.push(item.render(options, 0));
-    } else if (isStyleRecord(item)) {
-      for (const style of Object.values(item)) {
-        parts.push(style.render(options, 0));
-      }
     }
   }
 
