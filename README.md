@@ -8,12 +8,11 @@ This project was vibe coded with Claude.
 ## Features
 
 - Scoped class name generation with content-based hashing
-- Full CSS at-rule support (@media, @supports, @container, @keyframes,
-  @font-face, @layer, @property, and more)
+- Full CSS at-rule support (@font-face, @property, @page, @counter-style,
+  @color-profile)
 - CSS variable contracts with type-safe theming
-- Built-in variant support for component styles
-- Style composition with children
-- Selector builders (compound and complex selectors)
+- Nested selectors and pseudo-classes
+- Style composition with `use()`
 - Zero runtime in production (all CSS is generated at build time)
 
 ## Installation
@@ -40,7 +39,39 @@ const button = style({
 element.className = button.toString();
 
 // Render CSS
-const css = render([button]);
+const css = render(button);
+```
+
+### Nested Selectors
+
+```ts
+import { render, style } from "@baetheus/css";
+
+const card = style({
+  padding: "16px",
+  transition: "transform 0.2s",
+  select: {
+    "&:hover": { transform: "scale(1.02)" },
+    "& > h2": { marginTop: "0" },
+    "@media (min-width: 768px)": { padding: "24px" },
+  },
+});
+
+console.log(render(card));
+```
+
+### Custom Selectors
+
+```ts
+import { render, style } from "@baetheus/css";
+
+// Style an HTML element directly
+const body = style("body", { margin: "0", fontFamily: "sans-serif" });
+
+// Style by ID
+const header = style("#header", { position: "fixed", top: "0" });
+
+console.log(render(body, header));
 ```
 
 ### CSS Variables / Theming
@@ -87,89 +118,121 @@ const darkTheme = vars(theme, {
 // Apply theme
 document.body.className = lightTheme.toString();
 
-console.log(render([lightTheme, card]));
+console.log(render(lightTheme, card));
 ```
 
-### Variants
+### Combining Styles
 
 ```ts
-import { render, style } from "@baetheus/css";
+import { render, style, use } from "@baetheus/css";
 
-const button = style(
-  {
-    display: "inline-flex",
-    alignItems: "center",
-    borderRadius: "4px",
-  },
-  {
-    variants: {
-      small: { padding: "4px 8px", fontSize: "12px" },
-      large: { padding: "12px 24px", fontSize: "16px" },
-      primary: { backgroundColor: "blue", color: "white" },
-      ghost: { backgroundColor: "transparent", color: "blue" },
-    },
-  },
-);
+const base = style({ padding: "8px" });
+const primary = style({ backgroundColor: "blue", color: "white" });
+const large = style({ fontSize: "1.25rem" });
 
-// Use base styles
-element.className = button.toString();
-
-// Use with variants
-element.className = button.with("large", "primary");
+// Combine into a single class string
+const className = use(base, primary, large);
+// ".abc123 .def456 .ghi789"
 ```
 
-### Media Queries
+### At-Rules
 
 ```ts
-import { media, render, style } from "@baetheus/css";
+import { at, render } from "@baetheus/css";
 
-const responsive = style({ fontSize: "14px" });
-const query = media("(min-width: 768px)", responsive);
-
-console.log(render([responsive, query]));
-```
-
-### Keyframes
-
-```ts
-import { keyframes, render, style } from "@baetheus/css";
-
-const fadeIn = keyframes("fadeIn", [
-  { offset: "from", properties: { opacity: "0" } },
-  { offset: "to", properties: { opacity: "1" } },
-]);
-
-const animated = style({
-  animation: "fadeIn 0.3s ease-out",
+// @font-face
+const roboto = at("@font-face", {
+  fontFamily: "Roboto",
+  src: "url('/fonts/roboto.woff2') format('woff2')",
+  fontWeight: "400",
+  fontDisplay: "swap",
 });
 
-console.log(render([fadeIn, animated]));
-```
+// @property (CSS Houdini)
+const themeColor = at("@property --theme-color", {
+  syntax: '"<color>"',
+  inherits: "true",
+  initialValue: "blue",
+});
 
-### Element and ID Selectors
+// @counter-style
+const thumbs = at("@counter-style thumbs", {
+  system: "cyclic",
+  symbols: "👍",
+  suffix: " ",
+});
 
-```ts
-import { element, id, render } from "@baetheus/css";
+// @page
+const firstPage = at("@page :first", {
+  marginTop: "2in",
+});
 
-const body = element("body", { margin: "0", fontFamily: "sans-serif" });
-const header = id("header", { position: "fixed", top: "0" });
-
-console.log(render([body, header]));
+console.log(render(roboto, themeColor, thumbs, firstPage));
 ```
 
 ### Render Options
 
 ```ts
-import { MINIMAL_RENDER, render, STANDARD_RENDER, style } from "@baetheus/css";
+import {
+  MINIMAL_RENDER_OPTIONS,
+  render,
+  STANDARD_RENDER_OPTIONS,
+  style,
+} from "@baetheus/css";
 
 const button = style({ color: "blue" });
 
-// Human-readable output
-console.log(render([button], STANDARD_RENDER));
+// Human-readable output (default)
+console.log(render(button));
+console.log(render(STANDARD_RENDER_OPTIONS, button));
 
 // Minified output
-console.log(render([button], MINIMAL_RENDER));
+console.log(render(MINIMAL_RENDER_OPTIONS, button));
 ```
+
+### Reusable Properties
+
+```ts
+import { properties, style } from "@baetheus/css";
+
+// Define reusable style properties with type checking
+const flexCenter = properties({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+});
+
+const card = style({
+  ...flexCenter,
+  padding: "16px",
+});
+```
+
+## API Reference
+
+### Core Functions
+
+- `style(input)` - Creates a Style with auto-generated class name
+- `style(selector, input)` - Creates a Style with a custom selector
+- `render(...styles)` - Renders styles to CSS string
+- `render(options, ...styles)` - Renders with custom formatting options
+- `use(...styles)` - Combines multiple styles into a class name string
+- `properties(input)` - Identity function for type-checked style objects
+- `isStyle(value)` - Type guard for Style objects
+
+### Variables
+
+- `contract(shape)` - Creates a type-safe CSS variable contract
+- `vars(contract, values)` - Creates a theme implementation from a contract
+
+### At-Rules
+
+- `at(rule, properties)` - Creates styles for unnestable at-rules
+
+### Render Options
+
+- `STANDARD_RENDER_OPTIONS` - Pretty-printed CSS with newlines and indentation
+- `MINIMAL_RENDER_OPTIONS` - Minified CSS with no whitespace
 
 ## Inspirations
 
@@ -197,7 +260,7 @@ so there's plenty of room for improvement.
 deno test
 
 # Type check
-deno check css.ts
+deno check mod.ts
 
 # Format
 deno fmt
