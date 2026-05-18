@@ -7,8 +7,8 @@ import {
   type RenderOptions,
   type SelectorInput,
   STANDARD_RENDER_OPTIONS,
-  style,
   type Style,
+  style,
   type StyleInput,
   use,
 } from "../style.ts";

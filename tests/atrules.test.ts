@@ -425,7 +425,13 @@ Deno.test("FontFaceProperties - accepts font-face descriptors", () => {
 });
 
 Deno.test("PagePseudo - accepts page pseudo-classes", () => {
-  const pseudos: PagePseudo[] = [":first", ":last", ":left", ":right", ":blank"];
+  const pseudos: PagePseudo[] = [
+    ":first",
+    ":last",
+    ":left",
+    ":right",
+    ":blank",
+  ];
   assertEquals(pseudos.length, 5);
 });
 

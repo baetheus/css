@@ -2,14 +2,14 @@ import { assertEquals, assertNotEquals } from "@std/assert";
 import {
   buildProperties,
   buildVarShape,
-  contract,
   type Contract,
+  contract,
   isContract,
   type MapShape,
   type Shape,
   type VariableKey,
-  type VariableValue,
   type Variables,
+  type VariableValue,
   vars,
   type VarsValues,
   walkShape,
@@ -37,7 +37,9 @@ Deno.test("walkShape - handles nested shapes", () => {
     (v): v is null => v === null,
     (_, path) => path.join("-"),
   );
-  assertEquals(result, { colors: { primary: "colors-primary", secondary: "colors-secondary" } });
+  assertEquals(result, {
+    colors: { primary: "colors-primary", secondary: "colors-secondary" },
+  });
 });
 
 Deno.test("walkShape - handles deeply nested shapes", () => {
@@ -217,7 +219,9 @@ Deno.test("vars - renders correct CSS", () => {
 
 Deno.test("vars - handles nested contracts", () => {
   const theme = contract({ colors: { primary: null, secondary: null } });
-  const light = vars(theme, { colors: { primary: "blue", secondary: "green" } });
+  const light = vars(theme, {
+    colors: { primary: "blue", secondary: "green" },
+  });
   const css = render(STANDARD_RENDER_OPTIONS, light);
   assertEquals(css.includes("blue"), true);
   assertEquals(css.includes("green"), true);

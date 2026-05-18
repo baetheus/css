@@ -1,5 +1,5 @@
 import { assertEquals, assertNotEquals } from "@std/assert";
-import { type CssValue, camelToKebab, djb2, hashObject } from "../_internal.ts";
+import { camelToKebab, type CssValue, djb2, hashObject } from "../_internal.ts";
 
 // =============================================================================
 // djb2 tests
