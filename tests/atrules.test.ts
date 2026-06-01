@@ -250,18 +250,33 @@ Deno.test("LayerRule - accepts layer declarations", () => {
   assertEquals(order, "@layer base, components, utilities");
 });
 
-Deno.test("ScopeRule - accepts scope declarations", () => {
-  const implicit: ScopeRule = "@scope";
-  const root: ScopeRule = "@scope (.card)";
-  const bounded: ScopeRule = "@scope (.card) to (.footer)";
-  assertEquals(implicit, "@scope");
-  assertEquals(root, "@scope (.card)");
-  assertEquals(bounded, "@scope (.card) to (.footer)");
-});
-
 Deno.test("StartingStyleRule - accepts starting-style", () => {
   const rule: StartingStyleRule = "@starting-style";
   assertEquals(rule, "@starting-style");
+});
+
+Deno.test("ScopeRule - accepts implicit scope", () => {
+  const rule: ScopeRule = "@scope";
+  assertEquals(rule, "@scope");
+});
+
+Deno.test("ScopeRule - accepts scope with root selector", () => {
+  const rule: ScopeRule = "@scope (.card)";
+  assertEquals(rule, "@scope (.card)");
+});
+
+Deno.test("ScopeRule - accepts scope with root and limit selectors", () => {
+  const rule: ScopeRule = "@scope (.card) to (.slot)";
+  assertEquals(rule, "@scope (.card) to (.slot)");
+});
+
+Deno.test("ScopeRule - accepts complex selectors", () => {
+  const rule1: ScopeRule = "@scope (.light-theme) to (.dark-theme)";
+  const rule2: ScopeRule = "@scope (#container > .wrapper)";
+  const rule3: ScopeRule = "@scope ([data-scope])";
+  assertEquals(rule1, "@scope (.light-theme) to (.dark-theme)");
+  assertEquals(rule2, "@scope (#container > .wrapper)");
+  assertEquals(rule3, "@scope ([data-scope])");
 });
 
 Deno.test("FontFaceRule - accepts font-face", () => {

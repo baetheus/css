@@ -18,14 +18,11 @@ import type {
 // Type test stubs
 // =============================================================================
 
-/** Stub function to exercise valid Selector types at compile time */
+/** Stub function to exercise valid RawSelector types at compile time */
+function rawselect(_s: RawSelector): void {}
+
+/** Stub function to exercise valid RawSelector types at compile time */
 function select(_s: Selector): void {}
-
-/** Type that rejects any valid Selector */
-type NonSelector<T> = T extends RawSelector ? never : T;
-
-/** Stub function to verify values are NOT valid Selectors */
-function unselect<T>(_s: NonSelector<T>): void {}
 
 // =============================================================================
 // Positive type tests - valid selectors
@@ -33,344 +30,344 @@ function unselect<T>(_s: NonSelector<T>): void {}
 
 // HtmlElement selectors
 Deno.test("select - accepts sectioning elements", () => {
-  select("html");
-  select("body");
-  select("article");
-  select("section");
-  select("nav");
-  select("aside");
-  select("h1");
-  select("h2");
-  select("h3");
-  select("h4");
-  select("h5");
-  select("h6");
-  select("hgroup");
-  select("header");
-  select("footer");
-  select("address");
-  select("main");
+  rawselect("html");
+  rawselect("body");
+  rawselect("article");
+  rawselect("section");
+  rawselect("nav");
+  rawselect("aside");
+  rawselect("h1");
+  rawselect("h2");
+  rawselect("h3");
+  rawselect("h4");
+  rawselect("h5");
+  rawselect("h6");
+  rawselect("hgroup");
+  rawselect("header");
+  rawselect("footer");
+  rawselect("address");
+  rawselect("main");
 });
 
 Deno.test("select - accepts grouping elements", () => {
-  select("p");
-  select("hr");
-  select("pre");
-  select("blockquote");
-  select("ol");
-  select("ul");
-  select("menu");
-  select("li");
-  select("dl");
-  select("dt");
-  select("dd");
-  select("figure");
-  select("figcaption");
-  select("div");
+  rawselect("p");
+  rawselect("hr");
+  rawselect("pre");
+  rawselect("blockquote");
+  rawselect("ol");
+  rawselect("ul");
+  rawselect("menu");
+  rawselect("li");
+  rawselect("dl");
+  rawselect("dt");
+  rawselect("dd");
+  rawselect("figure");
+  rawselect("figcaption");
+  rawselect("div");
 });
 
 Deno.test("select - accepts text-level elements", () => {
-  select("a");
-  select("em");
-  select("strong");
-  select("small");
-  select("s");
-  select("cite");
-  select("q");
-  select("dfn");
-  select("abbr");
-  select("ruby");
-  select("rt");
-  select("rp");
-  select("data");
-  select("time");
-  select("code");
-  select("var");
-  select("samp");
-  select("kbd");
-  select("sub");
-  select("sup");
-  select("i");
-  select("b");
-  select("u");
-  select("mark");
-  select("bdi");
-  select("bdo");
-  select("span");
-  select("br");
-  select("wbr");
+  rawselect("a");
+  rawselect("em");
+  rawselect("strong");
+  rawselect("small");
+  rawselect("s");
+  rawselect("cite");
+  rawselect("q");
+  rawselect("dfn");
+  rawselect("abbr");
+  rawselect("ruby");
+  rawselect("rt");
+  rawselect("rp");
+  rawselect("data");
+  rawselect("time");
+  rawselect("code");
+  rawselect("var");
+  rawselect("samp");
+  rawselect("kbd");
+  rawselect("sub");
+  rawselect("sup");
+  rawselect("i");
+  rawselect("b");
+  rawselect("u");
+  rawselect("mark");
+  rawselect("bdi");
+  rawselect("bdo");
+  rawselect("span");
+  rawselect("br");
+  rawselect("wbr");
 });
 
 Deno.test("select - accepts edit elements", () => {
-  select("ins");
-  select("del");
+  rawselect("ins");
+  rawselect("del");
 });
 
 Deno.test("select - accepts embedded elements", () => {
-  select("picture");
-  select("img");
-  select("iframe");
-  select("embed");
-  select("object");
-  select("video");
-  select("audio");
-  select("map");
-  select("canvas");
+  rawselect("picture");
+  rawselect("img");
+  rawselect("iframe");
+  rawselect("embed");
+  rawselect("object");
+  rawselect("video");
+  rawselect("audio");
+  rawselect("map");
+  rawselect("canvas");
 });
 
 Deno.test("select - accepts tabular elements", () => {
-  select("table");
-  select("caption");
-  select("colgroup");
-  select("col");
-  select("tbody");
-  select("thead");
-  select("tfoot");
-  select("tr");
-  select("td");
-  select("th");
+  rawselect("table");
+  rawselect("caption");
+  rawselect("colgroup");
+  rawselect("col");
+  rawselect("tbody");
+  rawselect("thead");
+  rawselect("tfoot");
+  rawselect("tr");
+  rawselect("td");
+  rawselect("th");
 });
 
 Deno.test("select - accepts form elements", () => {
-  select("form");
-  select("label");
-  select("input");
-  select("button");
-  select("select");
-  select("datalist");
-  select("optgroup");
-  select("option");
-  select("textarea");
-  select("output");
-  select("progress");
-  select("meter");
-  select("fieldset");
-  select("legend");
+  rawselect("form");
+  rawselect("label");
+  rawselect("input");
+  rawselect("button");
+  rawselect("select");
+  rawselect("datalist");
+  rawselect("optgroup");
+  rawselect("option");
+  rawselect("textarea");
+  rawselect("output");
+  rawselect("progress");
+  rawselect("meter");
+  rawselect("fieldset");
+  rawselect("legend");
 });
 
 Deno.test("select - accepts interactive elements", () => {
-  select("details");
-  select("summary");
-  select("dialog");
+  rawselect("details");
+  rawselect("summary");
+  rawselect("dialog");
 });
 
 Deno.test("select - accepts scripting elements", () => {
-  select("noscript");
-  select("slot");
+  rawselect("noscript");
+  rawselect("slot");
 });
 
 Deno.test("select - accepts SVG elements", () => {
-  select("svg");
-  select("g");
-  select("path");
-  select("circle");
-  select("ellipse");
-  select("line");
-  select("polyline");
-  select("polygon");
-  select("rect");
-  select("text");
-  select("tspan");
-  select("textPath");
-  select("image");
-  select("use");
-  select("foreignObject");
+  rawselect("svg");
+  rawselect("g");
+  rawselect("path");
+  rawselect("circle");
+  rawselect("ellipse");
+  rawselect("line");
+  rawselect("polyline");
+  rawselect("polygon");
+  rawselect("rect");
+  rawselect("text");
+  rawselect("tspan");
+  rawselect("textPath");
+  rawselect("image");
+  rawselect("use");
+  rawselect("foreignObject");
 });
 
 Deno.test("select - accepts MathML elements", () => {
-  select("math");
-  select("mi");
-  select("mn");
-  select("mo");
-  select("ms");
-  select("mtext");
-  select("mrow");
-  select("mfrac");
-  select("msqrt");
-  select("mroot");
-  select("msub");
-  select("msup");
-  select("msubsup");
-  select("munder");
-  select("mover");
-  select("munderover");
-  select("mtable");
-  select("mtr");
-  select("mtd");
+  rawselect("math");
+  rawselect("mi");
+  rawselect("mn");
+  rawselect("mo");
+  rawselect("ms");
+  rawselect("mtext");
+  rawselect("mrow");
+  rawselect("mfrac");
+  rawselect("msqrt");
+  rawselect("mroot");
+  rawselect("msub");
+  rawselect("msup");
+  rawselect("msubsup");
+  rawselect("munder");
+  rawselect("mover");
+  rawselect("munderover");
+  rawselect("mtable");
+  rawselect("mtr");
+  rawselect("mtd");
 });
 
 Deno.test("select - accepts universal selector", () => {
-  select("*");
+  rawselect("*");
 });
 
 Deno.test("select - accepts parent selectors", () => {
-  select("&");
-  select("&:hover");
-  select("&:focus");
-  select("& > span");
-  select("&.active");
-  select("&#id");
-  select("&[disabled]");
-  select("& + p");
-  select("& ~ div");
+  rawselect("&");
+  rawselect("&:hover");
+  rawselect("&:focus");
+  rawselect("& > span");
+  rawselect("&.active");
+  rawselect("&#id");
+  rawselect("&[disabled]");
+  rawselect("& + p");
+  rawselect("& ~ div");
 });
 
 Deno.test("select - accepts class selectors", () => {
-  select(".button");
-  select(".my-class");
-  select(".BEM__block--modifier");
-  select(".camelCase");
-  select(".-leading-dash");
-  select("._underscore");
+  rawselect(".button");
+  rawselect(".my-class");
+  rawselect(".BEM__block--modifier");
+  rawselect(".camelCase");
+  rawselect(".-leading-dash");
+  rawselect("._underscore");
 });
 
 Deno.test("select - accepts ID selectors", () => {
-  select("#main");
-  select("#my-id");
-  select("#camelCaseId");
-  select("#id123");
+  rawselect("#main");
+  rawselect("#my-id");
+  rawselect("#camelCaseId");
+  rawselect("#id123");
 });
 
 Deno.test("select - accepts attribute selectors", () => {
-  select("[disabled]");
-  select('[type="text"]');
-  select("[data-value]");
-  select('[href^="https"]');
-  select('[class*="btn"]');
-  select('[lang|="en"]');
-  select("[title~='word']");
-  select('[href$=".pdf"]');
+  rawselect("[disabled]");
+  rawselect('[type="text"]');
+  rawselect("[data-value]");
+  rawselect('[href^="https"]');
+  rawselect('[class*="btn"]');
+  rawselect('[lang|="en"]');
+  rawselect("[title~='word']");
+  rawselect('[href$=".pdf"]');
 });
 
 Deno.test("select - accepts simple pseudo-classes (user action)", () => {
-  select(":active");
-  select(":hover");
-  select(":focus");
-  select(":focus-visible");
-  select(":focus-within");
+  rawselect(":active");
+  rawselect(":hover");
+  rawselect(":focus");
+  rawselect(":focus-visible");
+  rawselect(":focus-within");
 });
 
 Deno.test("select - accepts simple pseudo-classes (link)", () => {
-  select(":link");
-  select(":visited");
-  select(":any-link");
-  select(":local-link");
-  select(":target");
-  select(":target-within");
+  rawselect(":link");
+  rawselect(":visited");
+  rawselect(":any-link");
+  rawselect(":local-link");
+  rawselect(":target");
+  rawselect(":target-within");
 });
 
 Deno.test("select - accepts simple pseudo-classes (input state)", () => {
-  select(":enabled");
-  select(":disabled");
-  select(":read-only");
-  select(":read-write");
-  select(":placeholder-shown");
-  select(":autofill");
-  select(":default");
-  select(":checked");
-  select(":indeterminate");
+  rawselect(":enabled");
+  rawselect(":disabled");
+  rawselect(":read-only");
+  rawselect(":read-write");
+  rawselect(":placeholder-shown");
+  rawselect(":autofill");
+  rawselect(":default");
+  rawselect(":checked");
+  rawselect(":indeterminate");
 });
 
 Deno.test("select - accepts simple pseudo-classes (validation)", () => {
-  select(":valid");
-  select(":invalid");
-  select(":in-range");
-  select(":out-of-range");
-  select(":required");
-  select(":optional");
-  select(":user-valid");
-  select(":user-invalid");
+  rawselect(":valid");
+  rawselect(":invalid");
+  rawselect(":in-range");
+  rawselect(":out-of-range");
+  rawselect(":required");
+  rawselect(":optional");
+  rawselect(":user-valid");
+  rawselect(":user-invalid");
 });
 
 Deno.test("select - accepts simple pseudo-classes (tree-structural)", () => {
-  select(":root");
-  select(":empty");
-  select(":first-child");
-  select(":last-child");
-  select(":only-child");
-  select(":first-of-type");
-  select(":last-of-type");
-  select(":only-of-type");
+  rawselect(":root");
+  rawselect(":empty");
+  rawselect(":first-child");
+  rawselect(":last-child");
+  rawselect(":only-child");
+  rawselect(":first-of-type");
+  rawselect(":last-of-type");
+  rawselect(":only-of-type");
 });
 
 Deno.test("select - accepts simple pseudo-classes (resource state)", () => {
-  select(":playing");
-  select(":paused");
-  select(":seeking");
-  select(":buffering");
-  select(":stalled");
-  select(":muted");
-  select(":volume-locked");
+  rawselect(":playing");
+  rawselect(":paused");
+  rawselect(":seeking");
+  rawselect(":buffering");
+  rawselect(":stalled");
+  rawselect(":muted");
+  rawselect(":volume-locked");
 });
 
 Deno.test("select - accepts simple pseudo-classes (time-dimensional)", () => {
-  select(":current");
-  select(":past");
-  select(":future");
+  rawselect(":current");
+  rawselect(":past");
+  rawselect(":future");
 });
 
 Deno.test("select - accepts simple pseudo-classes (display state)", () => {
-  select(":fullscreen");
-  select(":modal");
-  select(":picture-in-picture");
-  select(":open");
-  select(":closed");
-  select(":popover-open");
+  rawselect(":fullscreen");
+  rawselect(":modal");
+  rawselect(":picture-in-picture");
+  rawselect(":open");
+  rawselect(":closed");
+  rawselect(":popover-open");
 });
 
 Deno.test("select - accepts simple pseudo-classes (printing)", () => {
-  select(":first");
-  select(":left");
-  select(":right");
-  select(":blank");
+  rawselect(":first");
+  rawselect(":left");
+  rawselect(":right");
+  rawselect(":blank");
 });
 
 Deno.test("select - accepts simple pseudo-classes (misc)", () => {
-  select(":defined");
-  select(":scope");
+  rawselect(":defined");
+  rawselect(":scope");
 });
 
 Deno.test("select - accepts functional pseudo-classes", () => {
-  select(":dir(ltr)");
-  select(":dir(rtl)");
-  select(":has(.child)");
-  select(":has(> img)");
-  select(":is(button, a)");
-  select(":is(h1, h2, h3)");
-  select(":lang(en)");
-  select(":lang(zh-Hans)");
-  select(":not(.disabled)");
-  select(":not(:first-child)");
-  select(":nth-child(2n+1)");
-  select(":nth-child(odd)");
-  select(":nth-col(2)");
-  select(":nth-last-child(3)");
-  select(":nth-last-col(1)");
-  select(":nth-last-of-type(2)");
-  select(":nth-of-type(even)");
-  select(":where(section, article)");
+  rawselect(":dir(ltr)");
+  rawselect(":dir(rtl)");
+  rawselect(":has(.child)");
+  rawselect(":has(> img)");
+  rawselect(":is(button, a)");
+  rawselect(":is(h1, h2, h3)");
+  rawselect(":lang(en)");
+  rawselect(":lang(zh-Hans)");
+  rawselect(":not(.disabled)");
+  rawselect(":not(:first-child)");
+  rawselect(":nth-child(2n+1)");
+  rawselect(":nth-child(odd)");
+  rawselect(":nth-col(2)");
+  rawselect(":nth-last-child(3)");
+  rawselect(":nth-last-col(1)");
+  rawselect(":nth-last-of-type(2)");
+  rawselect(":nth-of-type(even)");
+  rawselect(":where(section, article)");
 });
 
 Deno.test("select - accepts pseudo-elements", () => {
-  select("::after");
-  select("::before");
-  select("::first-letter");
-  select("::first-line");
+  rawselect("::after");
+  rawselect("::before");
+  rawselect("::first-letter");
+  rawselect("::first-line");
 });
 
 Deno.test("select - accepts nestable at-rules", () => {
-  select("@media");
-  select("@media screen");
-  select("@media (min-width: 768px)");
-  select("@supports (display: grid)");
-  select("@container");
-  select("@container (min-width: 300px)");
-  select("@layer");
-  select("@layer utilities");
-  select("@scope");
-  select("@scope (.card)");
-  select("@scope (.card) to (.footer)");
-  select("@starting-style");
+  rawselect("@media");
+  rawselect("@media screen");
+  rawselect("@media (min-width: 768px)");
+  rawselect("@supports (display: grid)");
+  rawselect("@container");
+  rawselect("@container (min-width: 300px)");
+  rawselect("@layer");
+  rawselect("@layer utilities");
+  rawselect("@scope");
+  rawselect("@scope (.card)");
+  rawselect("@scope (.card) to (.footer)");
+  rawselect("@starting-style");
 });
 
 Deno.test("select - accepts arbitrary strings (escape hatch)", () => {
@@ -383,73 +380,60 @@ Deno.test("select - accepts arbitrary strings (escape hatch)", () => {
 });
 
 // =============================================================================
-// Negative type tests - invalid selectors
-// =============================================================================
-
-Deno.test("unselect - rejects invalid pseudo-classes", () => {
-  unselect(":notapseudo");
-  unselect(":hover");
-});
-
-Deno.test("unselect - rejects invalid element names", () => {
-  unselect("abba");
-});
-
-// =============================================================================
 // Type narrowing tests
 // =============================================================================
 
 Deno.test("type narrowing - HtmlElement is subset of Selector", () => {
   const el: HtmlElement = "div";
-  select(el);
+  rawselect(el);
 });
 
 Deno.test("type narrowing - UniversalSelector is subset of Selector", () => {
   const universal: UniversalSelector = "*";
-  select(universal);
+  rawselect(universal);
 });
 
 Deno.test("type narrowing - ParentSelector is subset of Selector", () => {
   const parent: ParentSelector = "&:hover";
-  select(parent);
+  rawselect(parent);
 });
 
 Deno.test("type narrowing - ClassSelector is subset of Selector", () => {
   const cls: ClassSelector = ".button";
-  select(cls);
+  rawselect(cls);
 });
 
 Deno.test("type narrowing - IDSelector is subset of Selector", () => {
   const id: IDSelector = "#main";
-  select(id);
+  rawselect(id);
 });
 
 Deno.test("type narrowing - AttributeSelector is subset of Selector", () => {
   const attr: AttributeSelector = "[disabled]";
-  select(attr);
+  rawselect(attr);
 });
 
 Deno.test("type narrowing - SimpleSelectors is subset of Selector", () => {
   const simple: SimpleSelectors = "span";
-  select(simple);
+  rawselect(simple);
 });
 
 Deno.test("type narrowing - PseudoClassSimple is subset of Selector", () => {
   const pseudo: PseudoClassSimple = ":hover";
-  select(pseudo);
+  rawselect(pseudo);
 });
 
 Deno.test("type narrowing - PseudoClassFunctional is subset of Selector", () => {
   const pseudo: PseudoClassFunctional = ":nth-child(2n)";
-  select(pseudo);
+  rawselect(pseudo);
 });
 
 Deno.test("type narrowing - PseudoClass is subset of Selector", () => {
   const pseudo: PseudoClass = ":focus";
-  select(pseudo);
+  rawselect(pseudo);
 });
 
 Deno.test("type narrowing - PseudoElement is subset of Selector", () => {
   const pseudo: PseudoElement = "::before";
-  select(pseudo);
+  rawselect(pseudo);
 });

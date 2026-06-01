@@ -130,6 +130,10 @@
  * @since 0.0.4
  */
 
+export type { RenderOptions, Style } from "./style.ts";
+export type { Contract } from "./variables.ts";
+export type { CSSAtRule } from "./atrules.ts";
+
 export {
   isStyle,
   MINIMAL_RENDER_OPTIONS,
@@ -139,5 +143,5 @@ export {
   style,
   use,
 } from "./style.ts";
-export { contract, vars } from "./variables.ts";
+export { contract, isContract, vars } from "./variables.ts";
 export { at } from "./atrules.ts";

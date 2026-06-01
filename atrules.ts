@@ -189,27 +189,6 @@ export type DocumentRule = `@document ${string}` | `@-moz-document ${string}`;
 export type LayerRule = `@layer` | `@layer ${string}`;
 
 /**
- * @scope — limits the reach of enclosed style rules to a DOM subtree.
- *
- * Without a prelude the scope root is the stylesheet's owner element.
- *
- * @example
- * ```ts
- * import type { ScopeRule } from "./atrules.ts";
- *
- * const implicit: ScopeRule = "@scope";
- * const root: ScopeRule = "@scope (.card)";
- * const bounded: ScopeRule = "@scope (.card) to (.footer)";
- * ```
- *
- * @since 0.0.4
- */
-export type ScopeRule =
-  | `@scope`
-  | `@scope (${string})`
-  | `@scope (${string}) to (${string})`;
-
-/**
  * @starting-style — declares styles applied on the very first style
  * computation of an element (used to trigger CSS entry transitions).
  *
@@ -223,6 +202,31 @@ export type ScopeRule =
  * @since 0.0.4
  */
 export type StartingStyleRule = `@starting-style`;
+
+/**
+ * @scope — limits style rules to a scoping root and optionally excludes
+ * a subtree via a scoping limit.
+ *
+ * The prelude defines the scope boundaries:
+ * - `@scope` — implicit scope (styles apply to the element itself when nested)
+ * - `@scope (selector)` — scopes to elements matching the selector
+ * - `@scope (selector) to (selector)` — scopes from root to limit (exclusive)
+ *
+ * Inside the scope block, the `:scope` pseudo-class references the scoping root.
+ *
+ * @example
+ * ```ts
+ * import type { ScopeRule } from "./atrules.ts";
+ *
+ * const implicit: ScopeRule = "@scope";
+ * const card: ScopeRule = "@scope (.card)";
+ * const cardToSlot: ScopeRule = "@scope (.card) to (.slot)";
+ * const nested: ScopeRule = "@scope (.light-theme) to (.dark-theme)";
+ * ```
+ *
+ * @since 0.0.4
+ */
+export type ScopeRule = `@scope` | `@scope ${string}`;
 
 /**
  * @font-face — describes a custom font and where to fetch it.
@@ -417,7 +421,7 @@ export type FontFeatureSubRule =
  *
  * - @media, @supports, @container — conditional group rules
  * - @layer — cascade layer scoped to the selector
- * - @scope — further narrows the styling scope
+ * - @scope — scopes styles to a root element and optional limit
  * - @starting-style — entry-transition initial values
  *
  * @example
@@ -427,6 +431,7 @@ export type FontFeatureSubRule =
  * const media: SelectorNestedAtRule = "@media (min-width: 768px)";
  * const supports: SelectorNestedAtRule = "@supports (display: grid)";
  * const layer: SelectorNestedAtRule = "@layer utilities";
+ * const scope: SelectorNestedAtRule = "@scope (.card) to (.slot)";
  * ```
  *
  * @since 0.0.4
@@ -536,10 +541,10 @@ export type CSSAtRule =
  */
 export type NestableRules =
   | MediaRule
-  | ScopeRule
   | LayerRule
   | SupportsRule
   | ContainerRule
+  | ScopeRule
   | StartingStyleRule;
 
 /**
