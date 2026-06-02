@@ -151,6 +151,57 @@ export type Contract<T extends Shape> = MapShape<T, VariableValue> & {
 };
 
 /**
+ * Extracts the original Shape type from a Contract.
+ *
+ * Use this to recover the shape definition from an existing contract,
+ * which is useful when creating utility functions that work with contracts.
+ *
+ * @example
+ * ```ts
+ * import { contract, type ShapeOf } from "./variables.ts";
+ *
+ * const theme = contract({
+ *   colors: { primary: null, secondary: null },
+ *   spacing: null,
+ * });
+ *
+ * type ThemeShape = ShapeOf<typeof theme>;
+ * // { colors: { primary: null; secondary: null }; spacing: null }
+ * ```
+ *
+ * @since 0.0.4
+ */
+export type ShapeOf<T> = T extends Contract<infer S> ? S : never;
+
+/**
+ * Extracts the values type needed for the `vars()` function from a Contract.
+ *
+ * Use this to get the expected values structure when creating variable
+ * definitions for a contract. This is the type of the second argument to `vars()`.
+ *
+ * @example
+ * ```ts
+ * import { contract, vars, type VarsOf } from "./variables.ts";
+ *
+ * const theme = contract({
+ *   colors: { primary: null, secondary: null },
+ *   spacing: null,
+ * });
+ *
+ * type ThemeValues = VarsOf<typeof theme>;
+ * // { colors: { primary: CssValue; secondary: CssValue }; spacing: CssValue }
+ *
+ * // Useful for creating theme functions
+ * function createTheme(values: VarsOf<typeof theme>) {
+ *   return vars(theme, values);
+ * }
+ * ```
+ *
+ * @since 0.0.4
+ */
+export type VarsOf<T> = VarsValues<ShapeOf<T>>;
+
+/**
  * Recursively walks a shape, calling onLeaf for each leaf value.
  *
  * A utility function for transforming shape structures. Traverses the shape

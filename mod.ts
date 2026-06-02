@@ -131,7 +131,7 @@
  */
 
 export type { RenderOptions, Style } from "./style.ts";
-export type { Contract } from "./variables.ts";
+export type { Contract, ShapeOf, VarsOf } from "./variables.ts";
 export type { CSSAtRule } from "./atrules.ts";
 
 export {
