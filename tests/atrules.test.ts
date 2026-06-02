@@ -18,12 +18,14 @@ import {
   type FontFaceProperties,
   type FontFaceRule,
   type FontFeatureSubRule,
+  type FontFeatureValuesBlockProperties,
   type FontFeatureValuesDescriptors,
   type FontFeatureValuesRule,
   type FontFeatureValueType,
   type FontPaletteDescriptors,
   type FontPaletteValuesRule,
   type ImportRule,
+  type KeyframeBlockProperties,
   type KeyframeOffset,
   type KeyframeProperties,
   type KeyframesRule,
@@ -553,8 +555,11 @@ Deno.test("FlatAtRule - accepts flat at-rules", () => {
     "@property --color",
     "@counter-style thumbs",
     "@color-profile --swop",
+    "@keyframes fade-in",
+    "@-webkit-keyframes bounce",
+    '@font-feature-values "Brill"',
   ];
-  assertEquals(rules.length, 6);
+  assertEquals(rules.length, 9);
 });
 
 Deno.test("ExtractAtRuleTag - extracts tag from at-rule", () => {
@@ -576,4 +581,89 @@ Deno.test("FlatAtRulePropertiesFor - gets properties for specific at-rule", () =
   type Props = FlatAtRulePropertiesFor<"@property --color">;
   const props: Props = { syntax: '"<color>"', inherits: "true" };
   assertEquals(props.syntax, '"<color>"');
+});
+
+// =============================================================================
+// @keyframes tests
+// =============================================================================
+
+Deno.test("at - creates @keyframes style with from/to", () => {
+  const fadeIn = at("@keyframes fade-in", {
+    from: { opacity: "0" },
+    to: { opacity: "1" },
+  });
+  assertEquals(fadeIn.toString(), "@keyframes fade-in");
+  const css = render(fadeIn);
+  assertEquals(css.includes("@keyframes fade-in"), true);
+  assertEquals(css.includes("from"), true);
+  assertEquals(css.includes("to"), true);
+  assertEquals(css.includes("opacity"), true);
+});
+
+Deno.test("at - creates @keyframes style with percentages", () => {
+  const bounce = at("@keyframes bounce", {
+    "0%": { transform: "translateY(0)" },
+    "50%": { transform: "translateY(-20px)" },
+    "100%": { transform: "translateY(0)" },
+  });
+  assertEquals(bounce.toString(), "@keyframes bounce");
+  const css = render(bounce);
+  assertEquals(css.includes("0%"), true);
+  assertEquals(css.includes("50%"), true);
+  assertEquals(css.includes("100%"), true);
+  assertEquals(css.includes("transform"), true);
+});
+
+Deno.test("at - creates @-webkit-keyframes style", () => {
+  const slide = at("@-webkit-keyframes slide", {
+    from: { transform: "translateX(-100%)" },
+    to: { transform: "translateX(0)" },
+  });
+  assertEquals(slide.toString(), "@-webkit-keyframes slide");
+  const css = render(slide);
+  assertEquals(css.includes("@-webkit-keyframes slide"), true);
+});
+
+Deno.test("KeyframeBlockProperties - accepts keyframe block definitions", () => {
+  const props: KeyframeBlockProperties = {
+    from: { opacity: "0", transform: "scale(0.5)" },
+    "50%": { opacity: "0.5", transform: "scale(1.2)" },
+    to: { opacity: "1", transform: "scale(1)" },
+  };
+  assertEquals(Object.keys(props).length, 3);
+});
+
+Deno.test("FlatAtRuleProperties - includes @keyframes type", () => {
+  type KeyframeProps = FlatAtRuleProperties["@keyframes"];
+  const props: KeyframeProps = {
+    from: { opacity: "0" },
+    to: { opacity: "1" },
+  };
+  assertEquals(props.from?.opacity, "0");
+});
+
+// =============================================================================
+// @font-feature-values tests
+// =============================================================================
+
+Deno.test("at - creates @font-feature-values style", () => {
+  const brill = at('@font-feature-values "Brill"', {
+    "@swash": { elegant: "1" },
+    "@styleset": { "alt-g": "1", "alt-m": "2" },
+  });
+  assertEquals(brill.toString(), '@font-feature-values "Brill"');
+  const css = render(brill);
+  assertEquals(css.includes("@font-feature-values"), true);
+  assertEquals(css.includes("@swash"), true);
+  assertEquals(css.includes("@styleset"), true);
+  assertEquals(css.includes("elegant"), true);
+});
+
+Deno.test("FontFeatureValuesBlockProperties - accepts feature value definitions", () => {
+  const props: FontFeatureValuesBlockProperties = {
+    "@swash": { elegant: "1" },
+    "@annotation": { circled: "2" },
+    "@ornaments": { fleurons: "3" },
+  };
+  assertEquals(props["@swash"]?.elegant, "1");
 });

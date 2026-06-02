@@ -864,11 +864,62 @@ export type ColorProfileDescriptors = {
 // =============================================================================
 
 /**
+ * Keyframe block properties - maps offset selectors to CSS properties.
+ *
+ * Used with @keyframes to define animation frames. Keys are keyframe
+ * offsets (from, to, or percentages) and values are CSS properties.
+ *
+ * @example
+ * ```ts
+ * import type { KeyframeBlockProperties } from "./atrules.ts";
+ *
+ * const fadeIn: KeyframeBlockProperties = {
+ *   from: { opacity: "0" },
+ *   to: { opacity: "1" },
+ * };
+ *
+ * const bounce: KeyframeBlockProperties = {
+ *   "0%": { transform: "translateY(0)" },
+ *   "50%": { transform: "translateY(-20px)" },
+ *   "100%": { transform: "translateY(0)" },
+ * };
+ * ```
+ *
+ * @since 0.0.8
+ */
+export type KeyframeBlockProperties = Partial<
+  Record<KeyframeOffset, Properties>
+>;
+
+/**
+ * Font feature values block properties - maps feature types to named values.
+ *
+ * Used with @font-feature-values to define OpenType feature aliases.
+ * Keys are feature sub-rule types (@swash, @styleset, etc.) and values
+ * are mappings of names to OpenType indices.
+ *
+ * @example
+ * ```ts
+ * import type { FontFeatureValuesBlockProperties } from "./atrules.ts";
+ *
+ * const brill: FontFeatureValuesBlockProperties = {
+ *   "@swash": { elegant: "1" },
+ *   "@styleset": { "alt-g": "1", "alt-m": "2" },
+ * };
+ * ```
+ *
+ * @since 0.0.8
+ */
+export type FontFeatureValuesBlockProperties = Partial<
+  Record<FontFeatureSubRule, Record<string, string>>
+>;
+
+/**
  * Map of unnestable at-rule tags to their flat descriptor property types.
  *
- * These at-rules have block content that consists of flat property declarations
- * rather than nested rules. Complex at-rules like @keyframes and @font-feature-values
- * are excluded as they require nested structures.
+ * These at-rules have block content that consists of property declarations.
+ * Some like @keyframes and @font-feature-values use nested block structures
+ * which are converted to the appropriate format by the `at` function.
  *
  * @example
  * ```ts
@@ -876,6 +927,9 @@ export type ColorProfileDescriptors = {
  *
  * type FontFaceProps = FlatAtRuleProperties["@font-face"];
  * // { fontFamily?: string; src?: string; ... }
+ *
+ * type KeyframeProps = FlatAtRuleProperties["@keyframes"];
+ * // Record<KeyframeOffset, Properties>
  * ```
  *
  * @since 0.0.4
@@ -886,6 +940,9 @@ export type FlatAtRuleProperties = {
   "@property": PropertyDescriptors;
   "@counter-style": CounterStyleDescriptors;
   "@color-profile": ColorProfileDescriptors;
+  "@keyframes": KeyframeBlockProperties;
+  "@-webkit-keyframes": KeyframeBlockProperties;
+  "@font-feature-values": FontFeatureValuesBlockProperties;
 };
 
 /**
@@ -912,7 +969,9 @@ export type FlatAtRule =
   | CounterStyleRule
   | ColorProfileRule
   | PageRule
-  | FontFaceRule;
+  | FontFaceRule
+  | KeyframesRule
+  | FontFeatureValuesRule;
 
 /**
  * Extracts the at-rule tag from a full at-rule string.
@@ -959,11 +1018,77 @@ export type FlatAtRulePropertiesFor<T extends FlatAtRule> =
     : never;
 
 /**
+ * Extracts the at-rule keyword from a full at-rule string.
+ *
+ * @param rule - The full at-rule string
+ * @returns The at-rule keyword (e.g., "@keyframes" from "@keyframes bounce")
+ *
+ * @internal
+ * @since 0.0.8
+ */
+function extractAtRuleKeyword(rule: string): string {
+  const spaceIndex = rule.indexOf(" ");
+  return spaceIndex === -1 ? rule : rule.slice(0, spaceIndex);
+}
+
+/**
+ * Converts keyframe block properties to style input with nested selectors.
+ *
+ * @param properties - Keyframe offset to properties mapping
+ * @returns StyleInput with select property for nested rendering
+ *
+ * @internal
+ * @since 0.0.8
+ */
+function keyframesToStyleInput(
+  properties: KeyframeBlockProperties,
+): Parameters<typeof style>[1] {
+  const select: Record<string, Record<string, string>> = {};
+  for (const [offset, props] of Object.entries(properties)) {
+    if (props) {
+      const stringProps: Record<string, string> = {};
+      for (const [key, value] of Object.entries(props)) {
+        stringProps[key] = String(value);
+      }
+      select[offset] = stringProps;
+    }
+  }
+  return { select } as Parameters<typeof style>[1];
+}
+
+/**
+ * Converts font feature values block properties to style input with nested selectors.
+ *
+ * @param properties - Font feature sub-rule to values mapping
+ * @returns StyleInput with select property for nested rendering
+ *
+ * @internal
+ * @since 0.0.8
+ */
+function fontFeatureValuesToStyleInput(
+  properties: FontFeatureValuesBlockProperties,
+): Parameters<typeof style>[1] {
+  const select: Record<string, Record<string, string>> = {};
+  for (const [subRule, values] of Object.entries(properties)) {
+    if (values) {
+      select[subRule] = values;
+    }
+  }
+  return { select } as Parameters<typeof style>[1];
+}
+
+/**
  * Creates a Style from an unnestable at-rule and its descriptor properties.
  *
  * This function provides type-safe creation of at-rule styles by narrowing
  * the properties argument based on the at-rule type. The at-rule string
  * becomes the selector and the properties are rendered as CSS declarations.
+ *
+ * For @keyframes rules, the properties are keyframe offsets mapped to CSS
+ * properties, which are rendered as nested blocks.
+ *
+ * For @font-feature-values rules, the properties are feature sub-rules
+ * mapped to named values, which are rendered as nested blocks.
  *
  * @param rule - The at-rule prelude string (e.g., "@font-face", "@property --my-color")
  * @param properties - The descriptor properties for the at-rule, narrowed by rule type
@@ -1005,6 +1130,18 @@ export type FlatAtRulePropertiesFor<T extends FlatAtRule> =
  *   src: 'url("/profiles/swop.icc")',
  *   renderingIntent: "relative-colorimetric",
  * });
+ *
+ * // @keyframes with KeyframeBlockProperties
+ * const fadeIn = at("@keyframes fade-in", {
+ *   from: { opacity: "0" },
+ *   to: { opacity: "1" },
+ * });
+ *
+ * // @font-feature-values with FontFeatureValuesBlockProperties
+ * const brill = at('@font-feature-values "Brill"', {
+ *   "@swash": { elegant: "1" },
+ *   "@styleset": { "alt-g": "1" },
+ * });
  * ```
  *
  * @since 0.0.4
@@ -1013,6 +1150,26 @@ export function at<T extends FlatAtRule>(
   rule: T,
   properties: FlatAtRulePropertiesFor<T>,
 ): Style {
+  const keyword = extractAtRuleKeyword(rule);
+
+  // Handle @keyframes rules - convert to nested selector format
+  if (keyword === "@keyframes" || keyword === "@-webkit-keyframes") {
+    return style(
+      rule,
+      keyframesToStyleInput(properties as KeyframeBlockProperties),
+    );
+  }
+
+  // Handle @font-feature-values rules - convert to nested selector format
+  if (keyword === "@font-feature-values") {
+    return style(
+      rule,
+      fontFeatureValuesToStyleInput(
+        properties as FontFeatureValuesBlockProperties,
+      ),
+    );
+  }
+
   // Cast needed because at-rule selectors and descriptor properties
   // don't match the standard Selector/StyleInput types
   return style(
