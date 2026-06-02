@@ -49,7 +49,7 @@ export type RenderOptions = {
  * import { render, style, STANDARD_RENDER_OPTIONS } from "./style.ts";
  *
  * const btn = style({ color: "red" });
- * render(STANDARD_RENDER_OPTIONS, btn);
+ * render(btn, STANDARD_RENDER_OPTIONS);
  * // .abc1234 {
  * //   color: red;
  * // }
@@ -73,7 +73,7 @@ export const STANDARD_RENDER_OPTIONS: RenderOptions = {
  * import { render, style, MINIMAL_RENDER_OPTIONS } from "./style.ts";
  *
  * const btn = style({ color: "red" });
- * render(MINIMAL_RENDER_OPTIONS, btn);
+ * render(btn, MINIMAL_RENDER_OPTIONS);
  * // .abc1234{color:red;}
  * ```
  *
@@ -139,7 +139,27 @@ export type StyleInput = Variables & Properties & {
 const StyleBrand = Symbol("StyleInput");
 
 /**
- * A branded style object containing a selector and style input.
+ * A single style block containing a selector and its style input.
+ *
+ * @example
+ * ```ts
+ * import type { StyleBlock } from "./style.ts";
+ *
+ * const block: StyleBlock = {
+ *   selector: ".button",
+ *   input: { color: "red", padding: "8px" },
+ * };
+ * ```
+ *
+ * @since 0.0.4
+ */
+export type StyleBlock = {
+  readonly selector: Selector;
+  readonly input: StyleInput;
+};
+
+/**
+ * A branded style object containing an iterable of style blocks.
  *
  * Created by the `style()` function. Can be converted to a class name
  * string via `toString()` and rendered to CSS via `render()`.
@@ -157,7 +177,7 @@ const StyleBrand = Symbol("StyleInput");
  * @since 0.0.4
  */
 export type Style = {
-  readonly [StyleBrand]: [Selector, StyleInput];
+  [StyleBrand](): Generator<StyleBlock>;
   toString(): string;
 };
 
@@ -205,14 +225,16 @@ export function style(input: StyleInput): Style;
  */
 export function style(selector: Selector, input: StyleInput): Style;
 export function style(): Style {
-  const value: [Selector, StyleInput] = arguments.length === 1
-    ? [`.${hashObject(arguments[0])}`, arguments[0]]
-    : [arguments[0], arguments[1]];
+  const block: StyleBlock = arguments.length === 1
+    ? { selector: `.${hashObject(arguments[0])}`, input: arguments[0] }
+    : { selector: arguments[0], input: arguments[1] };
 
   return {
-    [StyleBrand]: value,
+    *[StyleBrand]() {
+      yield block;
+    },
     toString() {
-      return value[0];
+      return block.selector;
     },
   };
 }
@@ -300,6 +322,43 @@ export function use(...styles: [Style, ...Style[]]): string {
 }
 
 /**
+ * Joins multiple Style objects into a single Style.
+ *
+ * Concatenates all style blocks from the provided styles into a new
+ * style that yields them in order. Uses lazy evaluation via generators.
+ *
+ * @param styles - One or more Style objects to join
+ * @returns A new Style containing all blocks from the input styles
+ *
+ * @example
+ * ```ts
+ * import { style, join, render } from "./style.ts";
+ *
+ * const base = style({ padding: "8px" });
+ * const theme = style({ color: "blue" });
+ * const combined = join(base, theme);
+ *
+ * console.log(render(combined));
+ * // .abc1234 { padding: 8px; }
+ * // .def5678 { color: blue; }
+ * ```
+ *
+ * @since 0.0.4
+ */
+export function join(...styles: [Style, ...Style[]]): Style {
+  return {
+    *[StyleBrand]() {
+      for (const s of styles) {
+        yield* s[StyleBrand]();
+      }
+    },
+    toString() {
+      return styles.map((s) => s.toString()).join(" ");
+    },
+  };
+}
+
+/**
  * Renders a single CSS property declaration.
  *
  * Converts camelCase property names to kebab-case, preserving custom
@@ -347,17 +406,19 @@ function renderSelect(
 ): string {
   const { newline } = options;
   return Object.entries(input).map(([s, i]) =>
-    i !== undefined ? renderStyle(style(s, i), depth + 1, options) : ""
+    i !== undefined
+      ? renderBlock({ selector: s, input: i }, depth + 1, options)
+      : ""
   ).join(newline);
 }
 
 /**
- * Renders a complete Style object to a CSS rule string.
+ * Renders a StyleBlock to a CSS rule string.
  *
  * Formats the selector, all properties, and any nested selectors
  * according to the provided render options.
  *
- * @param input - The Style object to render
+ * @param block - The StyleBlock to render
  * @param depth - Current indentation depth (default: 0)
  * @param options - Render options for formatting
  * @returns A complete CSS rule block string
@@ -365,14 +426,14 @@ function renderSelect(
  * @internal
  * @since 0.0.4
  */
-function renderStyle(
-  input: Style,
+function renderBlock(
+  block: StyleBlock,
   depth: number = 0,
   options: RenderOptions = STANDARD_RENDER_OPTIONS,
 ): string {
   const { newline, space, indent } = options;
-  const [selector, styles] = input[StyleBrand];
-  const props = Object.entries(styles).map(([key, value]) =>
+  const { selector, input } = block;
+  const props = Object.entries(input).map(([key, value]) =>
     key === "select"
       ? renderSelect(value, depth, options)
       : renderProperty(key, value, depth + 1, options)
@@ -383,24 +444,24 @@ function renderStyle(
 }
 
 /**
- * Renders multiple Style objects to a CSS string.
+ * Renders a Style object to a CSS string.
  *
- * Can be called with render options as the first argument for custom
- * formatting, or with just styles to use standard formatting.
+ * Iterates over all style blocks in the style and renders each one.
+ * Use `join()` to combine multiple styles before rendering.
  *
+ * @param style - The Style object to render
  * @param options - Render options for formatting (optional)
- * @param styles - One or more Style objects to render
  * @returns A complete CSS string with all rules
  *
  * @example
  * ```ts
- * import { style, render, MINIMAL_RENDER_OPTIONS } from "./style.ts";
+ * import { style, join, render, MINIMAL_RENDER_OPTIONS } from "./style.ts";
  *
  * const button = style({ color: "white", backgroundColor: "blue" });
  * const heading = style("h1", { fontSize: "2rem" });
  *
  * // Standard formatting (default)
- * console.log(render(button, heading));
+ * console.log(render(join(button, heading)));
  * // .abc1234 {
  * //   color: white;
  * //   background-color: blue;
@@ -410,30 +471,17 @@ function renderStyle(
  * // }
  *
  * // Minified output
- * console.log(render(MINIMAL_RENDER_OPTIONS, button));
+ * console.log(render(button, MINIMAL_RENDER_OPTIONS));
  * // .abc1234{color:white;background-color:blue;}
  * ```
  *
  * @since 0.0.4
  */
 export function render(
-  options: RenderOptions,
-  ...styles: [Style, ...Style[]]
-): string;
-/**
- * Renders multiple Style objects to a CSS string with standard formatting.
- *
- * @param styles - One or more Style objects to render
- * @returns A complete CSS string with all rules
- *
- * @since 0.0.4
- */
-export function render(...styles: [Style, ...Style[]]): string;
-export function render(...styles: [unknown, Style, ...Style[]]): string {
-  const [options, ..._styles] =
-    (isStyle(styles[0]) ? [STANDARD_RENDER_OPTIONS, ...styles] : styles) as [
-      RenderOptions,
-      ...[Style, ...Style[]],
-    ];
-  return _styles.map((s) => renderStyle(s, 0, options)).join(options.newline);
+  style: Style,
+  options: RenderOptions = STANDARD_RENDER_OPTIONS,
+): string {
+  return [...style[StyleBrand]()]
+    .map((block) => renderBlock(block, 0, options))
+    .join(options.newline);
 }

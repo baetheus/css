@@ -1,6 +1,7 @@
 import { assertEquals, assertNotEquals } from "@std/assert";
 import {
   isStyle,
+  join,
   MINIMAL_RENDER_OPTIONS,
   properties,
   render,
@@ -171,24 +172,24 @@ Deno.test("render - preserves custom properties (--*)", () => {
   assertEquals(css.includes("--primary"), true);
 });
 
-Deno.test("render - renders multiple styles", () => {
+Deno.test("render - renders multiple styles with join", () => {
   const btn = style(".btn", { color: "white" });
   const heading = style("h1", { fontSize: "2rem" });
-  const css = render(btn, heading);
+  const css = render(join(btn, heading));
   assertEquals(css.includes(".btn"), true);
   assertEquals(css.includes("h1"), true);
 });
 
 Deno.test("render - accepts explicit standard options", () => {
   const btn = style(".btn", { color: "red" });
-  const css = render(STANDARD_RENDER_OPTIONS, btn);
+  const css = render(btn, STANDARD_RENDER_OPTIONS);
   assertEquals(css.includes("\n"), true);
   assertEquals(css.includes("  "), true);
 });
 
 Deno.test("render - accepts minimal options", () => {
   const btn = style(".btn", { color: "red" });
-  const css = render(MINIMAL_RENDER_OPTIONS, btn);
+  const css = render(btn, MINIMAL_RENDER_OPTIONS);
   assertEquals(css.includes("\n"), false);
   assertEquals(css.includes("  "), false);
 });
@@ -250,6 +251,13 @@ Deno.test("render - handles undefined select values", () => {
   assertEquals(css.includes(".btn"), true);
 });
 
+Deno.test("render - renders same style twice correctly", () => {
+  const btn = style(".btn", { color: "red" });
+  const css1 = render(btn);
+  const css2 = render(btn);
+  assertEquals(css1, css2);
+});
+
 // =============================================================================
 // RenderOptions tests
 // =============================================================================
@@ -273,7 +281,7 @@ Deno.test("render - custom options work correctly", () => {
     space: " ",
   };
   const btn = style(".btn", { color: "red" });
-  const css = render(customOptions, btn);
+  const css = render(btn, customOptions);
   assertEquals(css.includes("\r\n"), true);
   assertEquals(css.includes("\t"), true);
 });
@@ -324,4 +332,59 @@ Deno.test("Style - has toString method", () => {
   const btn: Style = style({ color: "red" });
   assertEquals(typeof btn.toString, "function");
   assertEquals(typeof btn.toString(), "string");
+});
+
+// =============================================================================
+// join tests
+// =============================================================================
+
+Deno.test("join - combines two styles", () => {
+  const a = style(".a", { color: "red" });
+  const b = style(".b", { color: "blue" });
+  const combined = join(a, b);
+  const css = render(combined);
+  assertEquals(css.includes(".a"), true);
+  assertEquals(css.includes(".b"), true);
+  assertEquals(css.includes("red"), true);
+  assertEquals(css.includes("blue"), true);
+});
+
+Deno.test("join - toString returns space-separated selectors", () => {
+  const a = style(".a", { color: "red" });
+  const b = style(".b", { color: "blue" });
+  const combined = join(a, b);
+  assertEquals(combined.toString(), ".a .b");
+});
+
+Deno.test("join - supports nested joins", () => {
+  const a = style(".a", { color: "red" });
+  const b = style(".b", { color: "blue" });
+  const c = style(".c", { color: "green" });
+  const combined = join(a, join(b, c));
+  const css = render(combined);
+  assertEquals(css.includes(".a"), true);
+  assertEquals(css.includes(".b"), true);
+  assertEquals(css.includes(".c"), true);
+});
+
+Deno.test("join - preserves order of blocks", () => {
+  const a = style(".first", { color: "red" });
+  const b = style(".second", { color: "blue" });
+  const c = style(".third", { color: "green" });
+  const combined = join(a, b, c);
+  const css = render(combined);
+  const firstIndex = css.indexOf(".first");
+  const secondIndex = css.indexOf(".second");
+  const thirdIndex = css.indexOf(".third");
+  assertEquals(firstIndex < secondIndex, true);
+  assertEquals(secondIndex < thirdIndex, true);
+});
+
+Deno.test("join - can be rendered multiple times", () => {
+  const a = style(".a", { color: "red" });
+  const b = style(".b", { color: "blue" });
+  const combined = join(a, b);
+  const css1 = render(combined);
+  const css2 = render(combined);
+  assertEquals(css1, css2);
 });

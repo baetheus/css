@@ -292,7 +292,7 @@ export function buildVarShape<T extends Shape>(
  *
  * @example
  * ```ts
- * import { contract, vars, style, render } from "./mod.ts";
+ * import { contract, vars, style, join, render } from "./mod.ts";
  *
  * // Define the contract with arbitrary nesting
  * const theme = contract({
@@ -324,7 +324,7 @@ export function buildVarShape<T extends Shape>(
  *   spacing: "8px",
  * });
  *
- * console.log(render(lightTheme, button));
+ * console.log(render(join(lightTheme, button)));
  * ```
  *
  * @since 0.0.4

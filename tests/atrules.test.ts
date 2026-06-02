@@ -57,7 +57,7 @@ Deno.test("at - creates @font-face style", () => {
     fontDisplay: "swap",
   });
   assertEquals(fontFace.toString(), "@font-face");
-  const css = render(STANDARD_RENDER_OPTIONS, fontFace);
+  const css = render(fontFace);
   assertEquals(css.includes("font-family"), true);
   assertEquals(css.includes("Roboto"), true);
 });
@@ -69,7 +69,7 @@ Deno.test("at - creates @property style", () => {
     initialValue: "blue",
   });
   assertEquals(property.toString(), "@property --theme-color");
-  const css = render(STANDARD_RENDER_OPTIONS, property);
+  const css = render(property);
   assertEquals(css.includes("syntax"), true);
   assertEquals(css.includes("inherits"), true);
 });
@@ -81,7 +81,7 @@ Deno.test("at - creates @counter-style style", () => {
     suffix: " ",
   });
   assertEquals(counter.toString(), "@counter-style thumbs");
-  const css = render(STANDARD_RENDER_OPTIONS, counter);
+  const css = render(counter);
   assertEquals(css.includes("system"), true);
   assertEquals(css.includes("cyclic"), true);
 });
@@ -91,7 +91,7 @@ Deno.test("at - creates @page style", () => {
     marginTop: "2in",
   });
   assertEquals(page.toString(), "@page :first");
-  const css = render(STANDARD_RENDER_OPTIONS, page);
+  const css = render(page);
   assertEquals(css.includes("margin-top"), true);
 });
 
@@ -108,7 +108,7 @@ Deno.test("at - creates @color-profile style", () => {
     renderingIntent: "relative-colorimetric",
   });
   assertEquals(profile.toString(), "@color-profile --swop5c");
-  const css = render(STANDARD_RENDER_OPTIONS, profile);
+  const css = render(profile);
   assertEquals(css.includes("src"), true);
   assertEquals(css.includes("rendering-intent"), true);
 });
@@ -130,7 +130,7 @@ Deno.test("at - @font-face with all properties", () => {
     lineGapOverride: "0%",
     sizeAdjust: "100%",
   });
-  const css = render(STANDARD_RENDER_OPTIONS, fontFace);
+  const css = render(fontFace);
   assertEquals(css.includes("font-family"), true);
   assertEquals(css.includes("unicode-range"), true);
 });
@@ -140,7 +140,7 @@ Deno.test("at - @property without initialValue", () => {
     syntax: '"*"',
     inherits: "false",
   });
-  const css = render(STANDARD_RENDER_OPTIONS, property);
+  const css = render(property);
   assertEquals(css.includes("syntax"), true);
   assertEquals(css.includes("initial-value"), false);
 });
@@ -158,7 +158,7 @@ Deno.test("at - @counter-style with all descriptors", () => {
     fallback: "decimal",
     speakAs: "spell-out",
   });
-  const css = render(STANDARD_RENDER_OPTIONS, counter);
+  const css = render(counter);
   assertEquals(css.includes("system"), true);
   assertEquals(css.includes("fallback"), true);
 });
@@ -167,7 +167,7 @@ Deno.test("at - @color-profile without optional fields", () => {
   const profile = at("@color-profile --minimal", {
     src: 'url("profile.icc")',
   });
-  const css = render(STANDARD_RENDER_OPTIONS, profile);
+  const css = render(profile);
   assertEquals(css.includes("src"), true);
 });
 

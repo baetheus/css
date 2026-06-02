@@ -212,7 +212,7 @@ Deno.test("vars - creates Style with CSS custom properties", () => {
 Deno.test("vars - renders correct CSS", () => {
   const theme = contract({ primary: null });
   const light = vars(theme, { primary: "blue" });
-  const css = render(STANDARD_RENDER_OPTIONS, light);
+  const css = render(light);
   assertEquals(css.includes("blue"), true);
   assertEquals(css.includes("--"), true);
 });
@@ -222,7 +222,7 @@ Deno.test("vars - handles nested contracts", () => {
   const light = vars(theme, {
     colors: { primary: "blue", secondary: "green" },
   });
-  const css = render(STANDARD_RENDER_OPTIONS, light);
+  const css = render(light);
   assertEquals(css.includes("blue"), true);
   assertEquals(css.includes("green"), true);
 });

@@ -60,7 +60,7 @@
  *
  * @example CSS variable contracts
  * ```ts
- * import { contract, vars, style, render } from "@baetheus/css";
+ * import { contract, vars, style, join, render } from "@baetheus/css";
  *
  * // Define a type-safe variable contract
  * const theme = contract({
@@ -92,12 +92,12 @@
  *   spacing: { small: "4px", medium: "16px" },
  * });
  *
- * console.log(render(lightTheme, card));
+ * console.log(render(join(lightTheme, card)));
  * ```
  *
  * @example At-rules (font-face, keyframes, etc.)
  * ```ts
- * import { at, render } from "@baetheus/css";
+ * import { at, join, render } from "@baetheus/css";
  *
  * const roboto = at("@font-face", {
  *   fontFamily: "Roboto",
@@ -112,7 +112,7 @@
  *   initialValue: "blue",
  * });
  *
- * console.log(render(roboto, themeColor));
+ * console.log(render(join(roboto, themeColor)));
  * ```
  *
  * @example Minified output
@@ -122,7 +122,7 @@
  * const button = style({ color: "white", backgroundColor: "blue" });
  *
  * // Minified for production
- * console.log(render(MINIMAL_RENDER_OPTIONS, button));
+ * console.log(render(button, MINIMAL_RENDER_OPTIONS));
  * // .a1b2c3d4{color:white;background-color:blue;}
  * ```
  *
@@ -130,12 +130,13 @@
  * @since 0.0.4
  */
 
-export type { RenderOptions, Style } from "./style.ts";
+export type { RenderOptions, Style, StyleBlock } from "./style.ts";
 export type { Contract, ShapeOf, VarsOf } from "./variables.ts";
 export type { CSSAtRule } from "./atrules.ts";
 
 export {
   isStyle,
+  join,
   MINIMAL_RENDER_OPTIONS,
   properties,
   render,
