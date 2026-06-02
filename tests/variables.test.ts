@@ -1,6 +1,5 @@
 import { assertEquals, assertNotEquals } from "@std/assert";
 import {
-  buildProperties,
   buildVarShape,
   type Contract,
   contract,
@@ -14,7 +13,7 @@ import {
   type VarsValues,
   walkShape,
 } from "../variables.ts";
-import { render, STANDARD_RENDER_OPTIONS } from "../style.ts";
+import { render, style } from "../style.ts";
 
 // =============================================================================
 // walkShape tests
@@ -171,66 +170,74 @@ Deno.test("isContract - returns false for arrays", () => {
 });
 
 // =============================================================================
-// buildProperties tests
+// vars tests (Variables output)
 // =============================================================================
 
-Deno.test("buildProperties - creates CSS custom properties", () => {
-  const values = { color: "red" };
-  const result = buildProperties(values, "abc1234");
-  assertEquals(result["--abc1234-color"], "red");
-});
-
-Deno.test("buildProperties - handles nested values", () => {
-  const values = { colors: { primary: "blue", secondary: "green" } };
-  const result = buildProperties(values, "hash");
-  assertEquals(result["--hash-colors-primary"], "blue");
-  assertEquals(result["--hash-colors-secondary"], "green");
-});
-
-Deno.test("buildProperties - handles number values", () => {
-  const values = { spacing: 16 };
-  const result = buildProperties(values, "hash");
-  assertEquals(result["--hash-spacing"], 16);
-});
-
-Deno.test("buildProperties - handles deep nesting", () => {
-  const values = { a: { b: { c: "value" } } };
-  const result = buildProperties(values, "h");
-  assertEquals(result["--h-a-b-c"], "value");
-});
-
-// =============================================================================
-// vars tests
-// =============================================================================
-
-Deno.test("vars - creates Style with CSS custom properties", () => {
+Deno.test("vars - creates CSS custom properties", () => {
   const theme = contract({ color: null });
-  const light = vars(theme, { color: "blue" });
+  const result = vars(theme, { color: "red" });
+  assertEquals(typeof Object.keys(result)[0], "string");
+  assertEquals(Object.keys(result)[0].startsWith("--"), true);
+  assertEquals(Object.values(result)[0], "red");
+});
+
+Deno.test("vars - handles nested values", () => {
+  const theme = contract({ colors: { primary: null, secondary: null } });
+  const result = vars(theme, {
+    colors: { primary: "blue", secondary: "green" },
+  });
+  const keys = Object.keys(result);
+  assertEquals(keys.length, 2);
+  assertEquals(Object.values(result).includes("blue"), true);
+  assertEquals(Object.values(result).includes("green"), true);
+});
+
+Deno.test("vars - handles number values", () => {
+  const theme = contract({ spacing: null });
+  const result = vars(theme, { spacing: 16 });
+  assertEquals(Object.values(result)[0], 16);
+});
+
+Deno.test("vars - handles deep nesting", () => {
+  const theme = contract({ a: { b: { c: null } } });
+  const result = vars(theme, { a: { b: { c: "value" } } });
+  assertEquals(Object.values(result)[0], "value");
+});
+
+// =============================================================================
+// vars with style tests
+// =============================================================================
+
+Deno.test("vars with style - creates Style with CSS custom properties", () => {
+  const theme = contract({ color: null });
+  const light = style(vars(theme, { color: "blue" }));
   assertEquals(typeof light.toString(), "string");
 });
 
-Deno.test("vars - renders correct CSS", () => {
+Deno.test("vars with style - renders correct CSS", () => {
   const theme = contract({ primary: null });
-  const light = vars(theme, { primary: "blue" });
+  const light = style(vars(theme, { primary: "blue" }));
   const css = render(light);
   assertEquals(css.includes("blue"), true);
   assertEquals(css.includes("--"), true);
 });
 
-Deno.test("vars - handles nested contracts", () => {
+Deno.test("vars with style - handles nested contracts", () => {
   const theme = contract({ colors: { primary: null, secondary: null } });
-  const light = vars(theme, {
+  const light = style(vars(theme, {
     colors: { primary: "blue", secondary: "green" },
-  });
+  }));
   const css = render(light);
   assertEquals(css.includes("blue"), true);
   assertEquals(css.includes("green"), true);
 });
 
-Deno.test("vars - returns class selector matching contract hash", () => {
+Deno.test("vars with style - allows custom selectors", () => {
   const theme = contract({ color: null });
-  const light = vars(theme, { color: "red" });
-  assertEquals(light.toString().startsWith("."), true);
+  const light = style(":root", vars(theme, { color: "red" }));
+  const css = render(light);
+  assertEquals(css.includes(":root"), true);
+  assertEquals(css.includes("red"), true);
 });
 
 // =============================================================================

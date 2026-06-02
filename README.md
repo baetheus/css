@@ -96,29 +96,33 @@ const card = style({
   padding: theme.spacing,
 });
 
-// Create theme implementations
-const lightTheme = vars(theme, {
-  colors: {
-    primary: "blue",
-    secondary: "green",
-    brand: { light: "#eef", dark: "#335" },
-  },
-  spacing: "8px",
-});
+// Create theme implementations with any selector
+const lightTheme = style(
+  ":root",
+  vars(theme, {
+    colors: {
+      primary: "blue",
+      secondary: "green",
+      brand: { light: "#eef", dark: "#335" },
+    },
+    spacing: "8px",
+  }),
+);
 
-const darkTheme = vars(theme, {
-  colors: {
-    primary: "white",
-    secondary: "#ccc",
-    brand: { light: "#335", dark: "#eef" },
-  },
-  spacing: "8px",
-});
+const darkTheme = style(
+  ".dark",
+  vars(theme, {
+    colors: {
+      primary: "white",
+      secondary: "#ccc",
+      brand: { light: "#335", dark: "#eef" },
+    },
+    spacing: "8px",
+  }),
+);
 
-// Apply theme
-document.body.className = lightTheme.toString();
-
-console.log(render(lightTheme, card));
+// Apply theme by adding .dark class to switch themes
+console.log(render(lightTheme, darkTheme, card));
 ```
 
 ### Combining Styles
@@ -223,7 +227,8 @@ const card = style({
 ### Variables
 
 - `contract(shape)` - Creates a type-safe CSS variable contract
-- `vars(contract, values)` - Creates a theme implementation from a contract
+- `vars(contract, values)` - Creates CSS custom properties from a contract
+  (returns Variables to inject into a Style)
 
 ### At-Rules
 

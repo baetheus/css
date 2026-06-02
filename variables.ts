@@ -11,7 +11,6 @@
  */
 
 import { type CssValue, hashObject } from "./_internal.ts";
-import { type Style, style } from "./style.ts";
 
 // =============================================================================
 // Properties and Variables
@@ -181,7 +180,7 @@ export type ShapeOf<T> = T extends Contract<infer S> ? S : never;
  *
  * @example
  * ```ts
- * import { contract, vars, type VarsOf } from "./variables.ts";
+ * import { contract, vars, style, type VarsOf } from "./variables.ts";
  *
  * const theme = contract({
  *   colors: { primary: null, secondary: null },
@@ -192,8 +191,8 @@ export type ShapeOf<T> = T extends Contract<infer S> ? S : never;
  * // { colors: { primary: CssValue; secondary: CssValue }; spacing: CssValue }
  *
  * // Useful for creating theme functions
- * function createTheme(values: VarsOf<typeof theme>) {
- *   return vars(theme, values);
+ * function createTheme(selector: string, values: VarsOf<typeof theme>) {
+ *   return style(selector, vars(theme, values));
  * }
  * ```
  *
@@ -314,15 +313,15 @@ export function buildVarShape<T extends Shape>(
  *   padding: theme.spacing,
  * });
  *
- * // Create actual values
- * const lightTheme = vars(theme, {
+ * // Create actual values with any selector
+ * const lightTheme = style(":root", vars(theme, {
  *   colors: {
  *     primary: "blue",
  *     secondary: "green",
  *     brand: { light: "#eef", dark: "#335" },
  *   },
  *   spacing: "8px",
- * });
+ * }));
  *
  * console.log(render(join(lightTheme, button)));
  * ```
@@ -365,34 +364,48 @@ export function isContract(value: unknown): value is Contract<Shape> {
 }
 
 /**
- * Recursively builds CSS custom properties from values.
+ * Creates CSS custom properties from a contract and values.
  *
- * Transforms a shape with CSS values into a flat object of CSS custom
- * property declarations.
+ * Transforms a contract's shape with CSS values into a flat object of CSS
+ * custom property declarations that can be injected into any Style.
  *
- * @param shape - The shape with CSS values at each leaf
- * @param hash - The unique hash to use in variable names
+ * @param contract - The contract defining the variable structure
+ * @param values - The actual values for each variable
  * @returns A Variables object with CSS custom property declarations
  *
  * @example
  * ```ts
- * import { buildProperties } from "./variables.ts";
+ * import { contract, vars, style, render } from "./mod.ts";
  *
- * const values = { colors: { primary: "blue" } };
- * const props = buildProperties(values, "abc1234");
- * // { "--abc1234-colors-primary": "blue" }
+ * const theme = contract({
+ *   colors: { primary: null, secondary: null },
+ *   spacing: null,
+ * });
+ *
+ * // Create theme values and inject into any style
+ * const lightTheme = style(":root", vars(theme, {
+ *   colors: { primary: "blue", secondary: "green" },
+ *   spacing: "8px",
+ * }));
+ *
+ * const darkTheme = style(".dark", vars(theme, {
+ *   colors: { primary: "white", secondary: "#ccc" },
+ *   spacing: "8px",
+ * }));
+ *
+ * console.log(render(lightTheme, darkTheme));
  * ```
  *
- * @internal
  * @since 0.0.4
  */
-export function buildProperties<T extends Shape<CssValue>>(
-  shape: T,
-  hash: string,
+export function vars<T extends Shape>(
+  contract: Contract<T>,
+  values: VarsValues<T>,
 ): Variables {
+  const hash = contract[ContractHash];
   const result: Record<string, CssValue> = {};
   walkShape(
-    shape,
+    values,
     (v: CssValue | Shape<CssValue>): v is CssValue =>
       typeof v === "string" || typeof v === "number",
     (value, path) => result[`--${hash}-${path.join("-")}`] = value,
@@ -418,61 +431,3 @@ export function buildProperties<T extends Shape<CssValue>>(
  * @since 0.0.4
  */
 export type VarsValues<T extends Shape> = MapShape<T, CssValue>;
-
-/**
- * Creates a Style with CSS custom properties from a contract and values.
- *
- * This function generates the actual CSS custom property definitions
- * that match the contract's structure.
- *
- * @param contract - The contract defining the variable structure
- * @param values - The actual values for each variable
- * @returns A Style containing the CSS custom properties
- *
- * @example
- * ```ts
- * import { contract, vars, render } from "./mod.ts";
- *
- * const theme = contract({
- *   colors: {
- *     primary: null,
- *     brand: { light: null, dark: null },
- *   },
- *   spacing: null,
- * });
- *
- * const light = vars(theme, {
- *   colors: {
- *     primary: "blue",
- *     brand: { light: "#eef", dark: "#335" },
- *   },
- *   spacing: "8px",
- * });
- *
- * const dark = vars(theme, {
- *   colors: {
- *     primary: "white",
- *     brand: { light: "#335", dark: "#eef" },
- *   },
- *   spacing: "8px",
- * });
- *
- * console.log(render(light));
- * // .abc1234 {
- * //   --abc1234-colors-primary: blue;
- * //   --abc1234-colors-brand-light: #eef;
- * //   --abc1234-colors-brand-dark: #335;
- * //   --abc1234-spacing: 8px;
- * // }
- * ```
- *
- * @since 0.0.4
- */
-export function vars<T extends Shape>(
-  contract: Contract<T>,
-  values: VarsValues<T>,
-): Style {
-  const hash = contract[ContractHash];
-  const properties = buildProperties(values, hash);
-  return style(`.${hash}`, properties);
-}

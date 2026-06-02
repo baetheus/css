@@ -81,16 +81,16 @@
  *   color: theme.colors.primary,
  * });
  *
- * // Create theme implementations
- * const lightTheme = vars(theme, {
+ * // Create theme implementations with any selector
+ * const lightTheme = style(":root", vars(theme, {
  *   colors: { primary: "#0066cc", background: "#ffffff" },
  *   spacing: { small: "4px", medium: "16px" },
- * });
+ * }));
  *
- * const darkTheme = vars(theme, {
+ * const darkTheme = style(".dark", vars(theme, {
  *   colors: { primary: "#66b3ff", background: "#1a1a1a" },
  *   spacing: { small: "4px", medium: "16px" },
- * });
+ * }));
  *
  * console.log(render(join(lightTheme, card)));
  * ```
