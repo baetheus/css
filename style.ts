@@ -131,14 +131,6 @@ export type StyleInput = Variables & Properties & {
 };
 
 /**
- * Internal symbol for branding Style objects.
- *
- * @internal
- * @since 0.0.4
- */
-const StyleBrand = Symbol("StyleInput");
-
-/**
  * A single style block containing a selector and its style input.
  *
  * @example
@@ -176,10 +168,36 @@ export type StyleBlock = {
  *
  * @since 0.0.4
  */
-export type Style = {
-  [StyleBrand](): Generator<StyleBlock>;
-  toString(): string;
-};
+export class Style implements Iterable<StyleBlock> {
+  #selectors?: string;
+
+  constructor(private blocks: () => Generator<StyleBlock>) {}
+
+  *[Symbol.iterator]() {
+    yield* this.blocks();
+  }
+
+  toString(): string {
+    if (this.#selectors === undefined) {
+      this.#selectors = Array.from(this.blocks()).map((b) => b.selector).join(
+        " ",
+      );
+    }
+    return this.#selectors as string;
+  }
+
+  join(...styles: readonly Style[]): Style {
+    if (styles.length === 0) {
+      return this;
+    }
+    const _styles = [this, ...styles];
+    return new Style(function* joinedStyles() {
+      for (const style of _styles) {
+        yield* style;
+      }
+    });
+  }
+}
 
 /**
  * Creates a Style object from CSS properties.
@@ -228,15 +246,9 @@ export function style(): Style {
   const block: StyleBlock = arguments.length === 1
     ? { selector: `.${hashObject(arguments[0])}`, input: arguments[0] }
     : { selector: arguments[0], input: arguments[1] };
-
-  return {
-    *[StyleBrand]() {
-      yield block;
-    },
-    toString() {
-      return block.selector;
-    },
-  };
+  return new Style(function* newStyle() {
+    yield block;
+  });
 }
 
 /**
@@ -258,7 +270,7 @@ export function style(): Style {
  * @since 0.0.4
  */
 export function isStyle(input: unknown): input is Style {
-  return typeof input === "object" && input !== null && StyleBrand in input;
+  return input instanceof Style;
 }
 
 /**
@@ -322,40 +334,37 @@ export function use(...styles: [Style, ...Style[]]): string {
 }
 
 /**
- * Joins multiple Style objects into a single Style.
+ * Combines multiple Style objects into a single Style for rendering.
  *
- * Concatenates all style blocks from the provided styles into a new
- * style that yields them in order. Uses lazy evaluation via generators.
+ * Joins multiple styles so they can be rendered together as a single CSS output.
+ * This is useful for combining styles before passing to `render()`.
  *
- * @param styles - One or more Style objects to join
- * @returns A new Style containing all blocks from the input styles
+ * @param styles - Two or more Style objects to combine
+ * @returns A single Style containing all style blocks
  *
  * @example
  * ```ts
  * import { style, join, render } from "./style.ts";
  *
- * const base = style({ padding: "8px" });
- * const theme = style({ color: "blue" });
- * const combined = join(base, theme);
+ * const button = style({ color: "white", backgroundColor: "blue" });
+ * const heading = style("h1", { fontSize: "2rem" });
  *
- * console.log(render(combined));
- * // .abc1234 { padding: 8px; }
- * // .def5678 { color: blue; }
+ * // Combine styles for rendering
+ * console.log(render(join(button, heading)));
+ * // .abc1234 {
+ * //   color: white;
+ * //   background-color: blue;
+ * // }
+ * // h1 {
+ * //   font-size: 2rem;
+ * // }
  * ```
  *
  * @since 0.0.4
  */
 export function join(...styles: [Style, ...Style[]]): Style {
-  return {
-    *[StyleBrand]() {
-      for (const s of styles) {
-        yield* s[StyleBrand]();
-      }
-    },
-    toString() {
-      return styles.map((s) => s.toString()).join(" ");
-    },
-  };
+  const [first, ...rest] = styles;
+  return first.join(...rest);
 }
 
 /**
@@ -481,7 +490,7 @@ export function render(
   style: Style,
   options: RenderOptions = STANDARD_RENDER_OPTIONS,
 ): string {
-  return [...style[StyleBrand]()]
+  return Array.from(style)
     .map((block) => renderBlock(block, 0, options))
     .join(options.newline);
 }

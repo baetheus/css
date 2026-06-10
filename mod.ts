@@ -53,9 +53,13 @@
  * const primary = style({ backgroundColor: "blue", color: "white" });
  * const large = style({ fontSize: "1.25rem" });
  *
- * // Combine into a single class string
+ * // Combine into a single class string for use in HTML
  * const className = use(base, primary, large);
  * // ".abc123 .def456 .ghi789"
+ *
+ * // Or use the join method to combine styles for rendering
+ * const combined = base.join(primary, large);
+ * console.log(render(combined));
  * ```
  *
  * @example CSS variable contracts
@@ -92,7 +96,8 @@
  *   spacing: { small: "4px", medium: "16px" },
  * }));
  *
- * console.log(render(join(lightTheme, card)));
+ * // Use join() or Style.join() method to combine styles for rendering
+ * console.log(render(lightTheme.join(darkTheme, card)));
  * ```
  *
  * @example At-rules (font-face, keyframes, etc.)
@@ -112,7 +117,7 @@
  *   initialValue: "blue",
  * });
  *
- * console.log(render(join(roboto, themeColor)));
+ * console.log(render(roboto.join(themeColor)));
  * ```
  *
  * @example Minified output

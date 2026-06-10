@@ -63,7 +63,7 @@ console.log(render(card));
 ### Custom Selectors
 
 ```ts
-import { join, render, style } from "@baetheus/css";
+import { render, style } from "@baetheus/css";
 
 // Style an HTML element directly
 const body = style("body", { margin: "0", fontFamily: "sans-serif" });
@@ -71,13 +71,14 @@ const body = style("body", { margin: "0", fontFamily: "sans-serif" });
 // Style by ID
 const header = style("#header", { position: "fixed", top: "0" });
 
-console.log(render(join(body, header)));
+// Use the join method to combine styles for rendering
+console.log(render(body.join(header)));
 ```
 
 ### CSS Variables / Theming
 
 ```ts
-import { contract, join, render, style, vars } from "@baetheus/css";
+import { contract, render, style, vars } from "@baetheus/css";
 
 // Define the contract with arbitrary nesting (null marks each variable)
 const theme = contract({
@@ -122,7 +123,8 @@ const darkTheme = style(
 );
 
 // Apply theme by adding .dark class to switch themes
-console.log(render(join(lightTheme, darkTheme, card)));
+// Use join() or Style.join() to combine styles for rendering
+console.log(render(lightTheme.join(darkTheme, card)));
 ```
 
 ### Combining Styles
@@ -142,7 +144,7 @@ const className = use(base, primary, large);
 ### At-Rules
 
 ```ts
-import { at, join, render } from "@baetheus/css";
+import { at, render } from "@baetheus/css";
 
 // @font-face
 const roboto = at("@font-face", {
@@ -171,7 +173,8 @@ const firstPage = at("@page :first", {
   marginTop: "2in",
 });
 
-console.log(render(join(roboto, themeColor, thumbs, firstPage)));
+// Use join method to combine styles
+console.log(render(roboto.join(themeColor, thumbs, firstPage)));
 ```
 
 ### Render Options
@@ -218,17 +221,26 @@ const card = style({
 
 - `style(input)` - Creates a Style with auto-generated class name
 - `style(selector, input)` - Creates a Style with a custom selector
-- `render(style, options?)` - Renders a style to CSS string
+- `render(style, options?)` - Renders a Style to CSS string
 - `join(...styles)` - Combines multiple styles into a single Style for rendering
 - `use(...styles)` - Combines multiple styles into a class name string
 - `properties(input)` - Identity function for type-checked style objects
 - `isStyle(value)` - Type guard for Style objects
+
+### Style Class
+
+The `Style` class is iterable and has the following methods:
+
+- `toString()` - Returns space-separated selectors for all style blocks
+- `join(...styles)` - Combines this style with others into a single Style for
+  rendering
 
 ### Variables
 
 - `contract(shape)` - Creates a type-safe CSS variable contract
 - `vars(contract, values)` - Creates CSS custom properties from a contract
   (returns Variables to inject into a Style)
+- `isContract(value)` - Type guard for Contract objects
 
 ### At-Rules
 
