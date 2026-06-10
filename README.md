@@ -63,7 +63,7 @@ console.log(render(card));
 ### Custom Selectors
 
 ```ts
-import { render, style } from "@baetheus/css";
+import { join, render, style } from "@baetheus/css";
 
 // Style an HTML element directly
 const body = style("body", { margin: "0", fontFamily: "sans-serif" });
@@ -71,13 +71,13 @@ const body = style("body", { margin: "0", fontFamily: "sans-serif" });
 // Style by ID
 const header = style("#header", { position: "fixed", top: "0" });
 
-console.log(render(body, header));
+console.log(render(join(body, header)));
 ```
 
 ### CSS Variables / Theming
 
 ```ts
-import { contract, render, style, vars } from "@baetheus/css";
+import { contract, join, render, style, vars } from "@baetheus/css";
 
 // Define the contract with arbitrary nesting (null marks each variable)
 const theme = contract({
@@ -122,7 +122,7 @@ const darkTheme = style(
 );
 
 // Apply theme by adding .dark class to switch themes
-console.log(render(lightTheme, darkTheme, card));
+console.log(render(join(lightTheme, darkTheme, card)));
 ```
 
 ### Combining Styles
@@ -142,7 +142,7 @@ const className = use(base, primary, large);
 ### At-Rules
 
 ```ts
-import { at, render } from "@baetheus/css";
+import { at, join, render } from "@baetheus/css";
 
 // @font-face
 const roboto = at("@font-face", {
@@ -171,7 +171,7 @@ const firstPage = at("@page :first", {
   marginTop: "2in",
 });
 
-console.log(render(roboto, themeColor, thumbs, firstPage));
+console.log(render(join(roboto, themeColor, thumbs, firstPage)));
 ```
 
 ### Render Options
@@ -188,10 +188,10 @@ const button = style({ color: "blue" });
 
 // Human-readable output (default)
 console.log(render(button));
-console.log(render(STANDARD_RENDER_OPTIONS, button));
+console.log(render(button, STANDARD_RENDER_OPTIONS));
 
 // Minified output
-console.log(render(MINIMAL_RENDER_OPTIONS, button));
+console.log(render(button, MINIMAL_RENDER_OPTIONS));
 ```
 
 ### Reusable Properties
@@ -218,8 +218,8 @@ const card = style({
 
 - `style(input)` - Creates a Style with auto-generated class name
 - `style(selector, input)` - Creates a Style with a custom selector
-- `render(...styles)` - Renders styles to CSS string
-- `render(options, ...styles)` - Renders with custom formatting options
+- `render(style, options?)` - Renders a style to CSS string
+- `join(...styles)` - Combines multiple styles into a single Style for rendering
 - `use(...styles)` - Combines multiple styles into a class name string
 - `properties(input)` - Identity function for type-checked style objects
 - `isStyle(value)` - Type guard for Style objects
