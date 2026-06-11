@@ -10,8 +10,8 @@ import {
   type Variables,
   type VariableValue,
   walkShape,
-} from "../theme.ts";
-import { render, style } from "../style.ts";
+} from "../themes.ts";
+import { render, style } from "../styles.ts";
 
 // =============================================================================
 // walkShape tests
@@ -164,7 +164,7 @@ Deno.test("Theme - passes to style with deep nesting", () => {
 
 Deno.test("create - creates new theme with merged values", () => {
   const colors = theme({ primary: "blue", secondary: "green" });
-  const dark = colors.create({ primary: "white" });
+  const dark = colors.create({ primary: "white" }, { keepParentValues: true });
 
   // Should have same var references
   assertEquals(colors.primary, dark.primary);
@@ -195,9 +195,10 @@ Deno.test("create - handles nested partial updates", () => {
     spacing: "8px",
   });
 
-  const dark = t.create({
-    colors: { primary: "white" },
-  });
+  const dark = t.create(
+    { colors: { primary: "white" } },
+    { keepParentValues: true },
+  );
 
   const css = render(style(dark));
   assertEquals(css.includes("white"), true);
@@ -215,9 +216,10 @@ Deno.test("create - handles deeply nested partial updates", () => {
     },
   });
 
-  const updated = t.create({
-    a: { b: { c: "modified" } },
-  });
+  const updated = t.create(
+    { a: { b: { c: "modified" } } },
+    { keepParentValues: true },
+  );
 
   const css = render(style(updated));
   assertEquals(css.includes("modified"), true);
@@ -232,8 +234,8 @@ Deno.test("create - returns a Theme instance", () => {
 
 Deno.test("create - chaining works", () => {
   const colors = theme({ primary: "blue", secondary: "green" });
-  const v1 = colors.create({ primary: "red" });
-  const v2 = v1.create({ secondary: "yellow" });
+  const v1 = colors.create({ primary: "red" }, { keepParentValues: true });
+  const v2 = v1.create({ secondary: "yellow" }, { keepParentValues: true });
 
   const css = render(style(v2));
   assertEquals(css.includes("red"), true);
@@ -402,7 +404,7 @@ Deno.test("create - keepParentValues false with nested values", () => {
 // fallback tests
 // =============================================================================
 
-import { fallback } from "../theme.ts";
+import { fallback } from "../themes.ts";
 
 Deno.test("fallback - adds single fallback value", () => {
   const colors = theme({ primary: "blue" });

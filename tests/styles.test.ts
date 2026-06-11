@@ -1,19 +1,18 @@
 import { assertEquals, assertNotEquals } from "@std/assert";
 import {
+  group,
   hasStyles,
   join,
   MINIMAL_RENDER_OPTIONS,
   properties,
   render,
   type RenderOptions,
-  type SelectorInput,
   STANDARD_RENDER_OPTIONS,
   type Style,
   style,
   type StyleInput,
   use,
-  variant,
-} from "../style.ts";
+} from "../styles.ts";
 
 // =============================================================================
 // style tests
@@ -21,7 +20,9 @@ import {
 
 Deno.test("style - creates Style with auto-generated class name", () => {
   const btn = style({ color: "red" });
-  assertEquals(btn.toString().startsWith("."), true);
+  // toString returns the classname without the leading dot
+  assertEquals(btn.toString().length > 0, true);
+  assertEquals(btn.toString().startsWith("."), false);
 });
 
 Deno.test("style - returns consistent class name for same input", () => {
@@ -38,30 +39,32 @@ Deno.test("style - returns different class names for different inputs", () => {
 
 Deno.test("style - accepts custom selector", () => {
   const heading = style("h1", { fontSize: "2rem" });
-  assertEquals(heading.toString(), "h1");
+  // Element selectors return empty string from toString
+  assertEquals(heading.toString(), "");
 });
 
 Deno.test("style - accepts class selector", () => {
   const btn = style(".button", { padding: "8px" });
-  assertEquals(btn.toString(), ".button");
+  // toString returns the classname without the leading dot
+  assertEquals(btn.toString(), "button");
 });
 
 Deno.test("style - accepts ID selector", () => {
   const main = style("#main", { width: "100%" });
-  assertEquals(main.toString(), "#main");
+  // ID selectors return empty string from toString
+  assertEquals(main.toString(), "");
 });
 
 Deno.test("style - accepts pseudo-class selectors", () => {
   const link = style("a:hover", { color: "blue" });
-  assertEquals(link.toString(), "a:hover");
+  // Pseudo-class selectors return empty string from toString
+  assertEquals(link.toString(), "");
 });
 
 Deno.test("style - accepts nested selectors", () => {
   const btn = style({
     color: "white",
-    select: {
-      "&:hover": { color: "blue" },
-    },
+    "&:hover": { color: "blue" },
   });
   assertEquals(typeof btn.toString(), "string");
 });
@@ -75,11 +78,11 @@ Deno.test("hasStyles - returns true for Style objects", () => {
   assertEquals(hasStyles(btn), true);
 });
 
-Deno.test("hasStyles - returns true for Variant objects", () => {
-  const v = variant({
+Deno.test("hasStyles - returns true for StyleGroup objects", () => {
+  const g = group({
     primary: style({ color: "blue" }),
   });
-  assertEquals(hasStyles(v), true);
+  assertEquals(hasStyles(g), true);
 });
 
 Deno.test("hasStyles - returns true for joined styles", () => {
@@ -126,7 +129,7 @@ Deno.test("properties - returns input unchanged", () => {
 Deno.test("properties - preserves nested selectors", () => {
   const input: StyleInput = {
     color: "white",
-    select: { "&:hover": { color: "blue" } },
+    "&:hover": { color: "blue" },
   };
   const result = properties(input);
   assertEquals(result, input);
@@ -212,9 +215,7 @@ Deno.test("render - accepts minimal options", () => {
 Deno.test("render - renders nested selectors", () => {
   const btn = style(".btn", {
     color: "white",
-    select: {
-      "&:hover": { color: "blue" },
-    },
+    "&:hover": { color: "blue" },
   });
   const css = render(btn);
   assertEquals(css.includes("&:hover"), true);
@@ -224,13 +225,9 @@ Deno.test("render - renders nested selectors", () => {
 Deno.test("render - handles deeply nested selectors", () => {
   const btn = style(".btn", {
     color: "white",
-    select: {
-      "&:hover": {
-        color: "blue",
-        select: {
-          "& span": { fontWeight: "bold" },
-        },
-      },
+    "&:hover": {
+      color: "blue",
+      "& span": { fontWeight: "bold" },
     },
   });
   const css = render(btn);
@@ -246,22 +243,19 @@ Deno.test("render - handles number values", () => {
   assertEquals(css.includes("0.5"), true);
 });
 
-Deno.test("render - handles empty select object", () => {
+Deno.test("render - handles no nested selectors", () => {
   const btn = style(".btn", {
     color: "white",
-    select: {},
   });
   const css = render(btn);
   assertEquals(css.includes(".btn"), true);
 });
 
-Deno.test("render - handles undefined select values", () => {
+Deno.test("render - handles undefined nested selector values", () => {
   const btn = style(".btn", {
     color: "white",
-    select: {
-      "&:hover": undefined,
-    } as SelectorInput,
-  });
+    "&:hover": undefined,
+  } as StyleInput);
   const css = render(btn);
   assertEquals(css.includes(".btn"), true);
 });
@@ -323,24 +317,13 @@ Deno.test("StyleInput - accepts custom properties", () => {
   assertEquals(input["--primary"], "blue");
 });
 
-Deno.test("StyleInput - accepts select property", () => {
+Deno.test("StyleInput - accepts nested selectors as keys", () => {
   const input: StyleInput = {
     color: "white",
-    select: {
-      "&:hover": { color: "blue" },
-      "& > span": { fontWeight: "bold" },
-    },
+    "&:hover": { color: "blue" },
+    "& > span": { fontWeight: "bold" },
   };
-  assertEquals("select" in input, true);
-});
-
-Deno.test("SelectorInput - maps selectors to style inputs", () => {
-  const input: SelectorInput = {
-    "&:hover": { opacity: 0.8 },
-    "&:focus": { outline: "2px solid blue" },
-    "& span": { color: "inherit" },
-  };
-  assertEquals("& span" in input, true);
+  assertEquals("&:hover" in input, true);
 });
 
 Deno.test("Style - has toString method", () => {
@@ -398,62 +381,62 @@ Deno.test("join - can be rendered multiple times", () => {
 });
 
 // =============================================================================
-// variant tests
+// group tests
 // =============================================================================
 
-Deno.test("variant - creates variant from shape", () => {
-  const v = variant({
+Deno.test("group - creates group from shape", () => {
+  const g = group({
     primary: style(".primary", { color: "blue" }),
     secondary: style(".secondary", { color: "gray" }),
   });
-  assertEquals(v.primary.toString(), ".primary");
-  assertEquals(v.secondary.toString(), ".secondary");
+  assertEquals(g.primary.toString(), "primary");
+  assertEquals(g.secondary.toString(), "secondary");
 });
 
-Deno.test("variant - renders all leaf styles", () => {
-  const v = variant({
+Deno.test("group - renders all leaf styles", () => {
+  const g = group({
     primary: style(".primary", { color: "blue" }),
     secondary: style(".secondary", { color: "gray" }),
   });
-  const css = render(v);
+  const css = render(g);
   assertEquals(css.includes(".primary"), true);
   assertEquals(css.includes(".secondary"), true);
   assertEquals(css.includes("blue"), true);
   assertEquals(css.includes("gray"), true);
 });
 
-Deno.test("variant - handles nested shapes", () => {
-  const v = variant({
+Deno.test("group - handles nested shapes", () => {
+  const g = group({
     button: {
       primary: style(".btn-primary", { color: "white" }),
       secondary: style(".btn-secondary", { color: "black" }),
     },
     text: style(".text", { fontSize: "1rem" }),
   });
-  assertEquals(v.button.primary.toString(), ".btn-primary");
-  assertEquals(v.button.secondary.toString(), ".btn-secondary");
-  assertEquals(v.text.toString(), ".text");
-  const css = render(v);
+  assertEquals(g.button.primary.toString(), "btn-primary");
+  assertEquals(g.button.secondary.toString(), "btn-secondary");
+  assertEquals(g.text.toString(), "text");
+  const css = render(g);
   assertEquals(css.includes(".btn-primary"), true);
   assertEquals(css.includes(".btn-secondary"), true);
   assertEquals(css.includes(".text"), true);
 });
 
-Deno.test("variant - can be passed to join", () => {
-  const v = variant({
+Deno.test("group - can be passed to join", () => {
+  const g = group({
     primary: style(".primary", { color: "blue" }),
   });
   const extra = style(".extra", { padding: "8px" });
-  const combined = join(v, extra);
+  const combined = join(g, extra);
   const css = render(combined);
   assertEquals(css.includes(".primary"), true);
   assertEquals(css.includes(".extra"), true);
 });
 
-Deno.test("variant - StyleBlockSymbol is not enumerable", () => {
-  const v = variant({
+Deno.test("group - StyleBlockSymbol is not enumerable", () => {
+  const g = group({
     primary: style(".primary", { color: "blue" }),
   });
-  const keys = Object.keys(v);
+  const keys = Object.keys(g);
   assertEquals(keys, ["primary"]);
 });

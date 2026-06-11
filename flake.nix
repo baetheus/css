@@ -2,7 +2,7 @@
   description = "CSS";
 
   inputs = {
-    nixpkgs-stable.url = "github:nixos/nixpkgs/release-25.11";
+    nixpkgs-stable.url = "github:nixos/nixpkgs/release-26.05";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     nixpkgs.follows = "nixpkgs-stable";
 

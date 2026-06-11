@@ -44,9 +44,9 @@ Deno.test("djb2 - handles unicode", () => {
 // hashObject tests
 // =============================================================================
 
-Deno.test("hashObject - returns 7 character string", () => {
+Deno.test("hashObject - returns 8 character string", () => {
   const hash = hashObject({ color: "red" });
-  assertEquals(hash.length, 7);
+  assertEquals(hash.length, 8);
 });
 
 Deno.test("hashObject - returns consistent hash for same object", () => {
@@ -71,12 +71,12 @@ Deno.test("hashObject - handles arrays", () => {
 
 Deno.test("hashObject - handles strings", () => {
   const hash = hashObject("hello");
-  assertEquals(hash.length, 7);
+  assertEquals(hash.length, 8);
 });
 
 Deno.test("hashObject - handles numbers", () => {
   const hash = hashObject(42);
-  assertEquals(hash.length, 7);
+  assertEquals(hash.length, 8);
 });
 
 Deno.test("hashObject - handles nested objects", () => {
@@ -87,7 +87,7 @@ Deno.test("hashObject - handles nested objects", () => {
 
 Deno.test("hashObject - handles null", () => {
   const hash = hashObject(null);
-  assertEquals(hash.length, 7);
+  assertEquals(hash.length, 8);
 });
 
 Deno.test("hashObject - handles boolean", () => {
@@ -97,9 +97,9 @@ Deno.test("hashObject - handles boolean", () => {
 });
 
 Deno.test("hashObject - zero-pads short hashes", () => {
-  // Empty object should still produce 7-char hash
+  // Empty object should still produce 8-char hash
   const hash = hashObject({});
-  assertEquals(hash.length, 7);
+  assertEquals(hash.length, 8);
 });
 
 // =============================================================================

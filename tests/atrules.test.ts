@@ -27,7 +27,6 @@ import {
   type ImportRule,
   type KeyframeBlockProperties,
   type KeyframeOffset,
-  type KeyframeProperties,
   type KeyframesRule,
   type LayerRule,
   type MediaRule,
@@ -45,7 +44,7 @@ import {
   type SupportsRule,
   type Url,
 } from "../atrules.ts";
-import { render, STANDARD_RENDER_OPTIONS } from "../style.ts";
+import { render, STANDARD_RENDER_OPTIONS } from "../styles.ts";
 
 // =============================================================================
 // at function tests
@@ -58,7 +57,8 @@ Deno.test("at - creates @font-face style", () => {
     fontWeight: "400",
     fontDisplay: "swap",
   });
-  assertEquals(fontFace.toString(), "@font-face");
+  // At-rules are not class selectors, so toString returns ""
+  assertEquals(fontFace.toString(), "");
   const css = render(fontFace);
   assertEquals(css.includes("font-family"), true);
   assertEquals(css.includes("Roboto"), true);
@@ -70,7 +70,8 @@ Deno.test("at - creates @property style", () => {
     inherits: "true",
     initialValue: "blue",
   });
-  assertEquals(property.toString(), "@property --theme-color");
+  // At-rules are not class selectors, so toString returns ""
+  assertEquals(property.toString(), "");
   const css = render(property);
   assertEquals(css.includes("syntax"), true);
   assertEquals(css.includes("inherits"), true);
@@ -82,7 +83,8 @@ Deno.test("at - creates @counter-style style", () => {
     symbols: "👍",
     suffix: " ",
   });
-  assertEquals(counter.toString(), "@counter-style thumbs");
+  // At-rules are not class selectors, so toString returns ""
+  assertEquals(counter.toString(), "");
   const css = render(counter);
   assertEquals(css.includes("system"), true);
   assertEquals(css.includes("cyclic"), true);
@@ -92,7 +94,8 @@ Deno.test("at - creates @page style", () => {
   const page = at("@page :first", {
     marginTop: "2in",
   });
-  assertEquals(page.toString(), "@page :first");
+  // At-rules are not class selectors, so toString returns ""
+  assertEquals(page.toString(), "");
   const css = render(page);
   assertEquals(css.includes("margin-top"), true);
 });
@@ -101,7 +104,8 @@ Deno.test("at - creates @page style without pseudo", () => {
   const page = at("@page", {
     margin: "1in",
   });
-  assertEquals(page.toString(), "@page");
+  // At-rules are not class selectors, so toString returns ""
+  assertEquals(page.toString(), "");
 });
 
 Deno.test("at - creates @color-profile style", () => {
@@ -109,7 +113,8 @@ Deno.test("at - creates @color-profile style", () => {
     src: 'url("/profiles/swop.icc")',
     renderingIntent: "relative-colorimetric",
   });
-  assertEquals(profile.toString(), "@color-profile --swop5c");
+  // At-rules are not class selectors, so toString returns ""
+  assertEquals(profile.toString(), "");
   const css = render(profile);
   assertEquals(css.includes("src"), true);
   assertEquals(css.includes("rendering-intent"), true);
@@ -421,15 +426,6 @@ Deno.test("KeyframeOffset - accepts offset values", () => {
   assertEquals(percent, "50%");
 });
 
-Deno.test("KeyframeProperties - accepts keyframe definitions", () => {
-  const frames: KeyframeProperties = [
-    { offset: "from", properties: { opacity: 0 } },
-    { offset: "50%", properties: { opacity: 0.5 } },
-    { offset: "to", properties: { opacity: 1 } },
-  ];
-  assertEquals(frames.length, 3);
-});
-
 Deno.test("FontFaceProperties - accepts font-face descriptors", () => {
   const props: FontFaceProperties = {
     fontFamily: "Roboto",
@@ -592,7 +588,8 @@ Deno.test("at - creates @keyframes style with from/to", () => {
     from: { opacity: "0" },
     to: { opacity: "1" },
   });
-  assertEquals(fadeIn.toString(), "@keyframes fade-in");
+  // At-rules are not class selectors, so toString returns ""
+  assertEquals(fadeIn.toString(), "");
   const css = render(fadeIn);
   assertEquals(css.includes("@keyframes fade-in"), true);
   assertEquals(css.includes("from"), true);
@@ -606,7 +603,8 @@ Deno.test("at - creates @keyframes style with percentages", () => {
     "50%": { transform: "translateY(-20px)" },
     "100%": { transform: "translateY(0)" },
   });
-  assertEquals(bounce.toString(), "@keyframes bounce");
+  // At-rules are not class selectors, so toString returns ""
+  assertEquals(bounce.toString(), "");
   const css = render(bounce);
   assertEquals(css.includes("0%"), true);
   assertEquals(css.includes("50%"), true);
@@ -619,7 +617,8 @@ Deno.test("at - creates @-webkit-keyframes style", () => {
     from: { transform: "translateX(-100%)" },
     to: { transform: "translateX(0)" },
   });
-  assertEquals(slide.toString(), "@-webkit-keyframes slide");
+  // At-rules are not class selectors, so toString returns ""
+  assertEquals(slide.toString(), "");
   const css = render(slide);
   assertEquals(css.includes("@-webkit-keyframes slide"), true);
 });
@@ -651,7 +650,8 @@ Deno.test("at - creates @font-feature-values style", () => {
     "@swash": { elegant: "1" },
     "@styleset": { "alt-g": "1", "alt-m": "2" },
   });
-  assertEquals(brill.toString(), '@font-feature-values "Brill"');
+  // At-rules are not class selectors, so toString returns ""
+  assertEquals(brill.toString(), "");
   const css = render(brill);
   assertEquals(css.includes("@font-feature-values"), true);
   assertEquals(css.includes("@swash"), true);

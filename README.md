@@ -210,13 +210,13 @@ const card = style({
 });
 ```
 
-### Variants
+### Style Groups
 
 ```ts
-import { render, style, variant } from "@baetheus/css";
+import { group, render, style } from "@baetheus/css";
 
-// Create a variant tree to organize related styles
-const v = variant({
+// Create a style group to organize related styles
+const g = group({
   button: {
     primary: style({ backgroundColor: "blue", color: "white" }),
     secondary: style({ backgroundColor: "gray", color: "black" }),
@@ -228,10 +228,10 @@ const v = variant({
 });
 
 // Access individual styles via dot notation
-element.className = v.button.primary.toString();
+element.className = g.button.primary.toString();
 
 // Render all styles at once
-console.log(render(v));
+console.log(render(g));
 ```
 
 ## API Reference
@@ -240,13 +240,13 @@ console.log(render(v));
 
 - `style(input)` - Creates a Style with auto-generated class name
 - `style(selector, input)` - Creates a Style with a custom selector
-- `render(style, options?)` - Renders a HasStyles object (Style, Variant, or
+- `render(style, options?)` - Renders a HasStyles object (Style, StyleGroup, or
   joined) to CSS string
 - `join(...styles)` - Combines multiple HasStyles objects into one for rendering
 - `use(...styles)` - Combines multiple styles into a class name string
 - `properties(input)` - Identity function for type-checked style objects
-- `variant(shape)` - Creates a Variant from a tree of styles
-- `hasStyles(value)` - Type guard for HasStyles objects (Style or Variant)
+- `group(shape)` - Creates a StyleGroup from a tree of styles
+- `hasStyles(value)` - Type guard for HasStyles objects (Style or StyleGroup)
 
 ### Style Object
 
@@ -263,13 +263,13 @@ A Style object has the following method:
 - `isTheme(value)` - Type guard for Theme objects
 - Pass a theme directly to `style()` to generate CSS custom properties
 
-### Variants
+### Style Groups
 
-- `variant(shape)` - Creates a Variant from a tree of styles (nested object of
+- `group(shape)` - Creates a StyleGroup from a tree of styles (nested object of
   styles)
-- Variant objects implement HasStyles, so they can be passed directly to
+- StyleGroup objects implement HasStyles, so they can be passed directly to
   `render()`
-- Access individual styles via dot notation (e.g., `v.button.primary`)
+- Access individual styles via dot notation (e.g., `g.button.primary`)
 
 ### At-Rules
 

@@ -11,7 +11,7 @@
  */
 
 import type { Properties } from "csstype";
-import { type Style, style, type StyleInput } from "./style.ts";
+import { type Style, style, type StyleInput } from "./styles.ts";
 
 /**
  * A quoted string value (single or double quotes).
@@ -565,34 +565,6 @@ export type NestableRules =
  * @since 0.0.4
  */
 export type KeyframeOffset = "from" | "to" | `${number}%`;
-
-/**
- * Keyframe properties - frames with offset and CSS properties.
- *
- * An array of keyframe definitions, each containing an offset and CSS properties.
- *
- * @example
- * ```ts
- * import type { KeyframeProperties } from "./atrules.ts";
- *
- * const fadeIn: KeyframeProperties = [
- *   { offset: "from", properties: { opacity: 0 } },
- *   { offset: "to", properties: { opacity: 1 } },
- * ];
- *
- * const bounce: KeyframeProperties = [
- *   { offset: "0%", properties: { transform: "translateY(0)" } },
- *   { offset: "50%", properties: { transform: "translateY(-20px)" } },
- *   { offset: "100%", properties: { transform: "translateY(0)" } },
- * ];
- * ```
- *
- * @since 0.0.4
- */
-export type KeyframeProperties = readonly {
-  readonly offset: KeyframeOffset;
-  readonly properties: Properties;
-}[];
 
 /**
  * Font-face descriptor properties.

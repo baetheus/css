@@ -97,15 +97,15 @@ export function djb2(str: string): number {
  * collision-resistant class names from style objects.
  *
  * @param input - Any JSON-serializable value to hash
- * @returns A 7-character base36 hash string
+ * @returns An 8-character hash string (letter prefix + 7 base36 digits)
  *
  * @example
  * ```ts
  * import { hashObject } from "./_internal.ts";
  *
- * hashObject({ color: "red" });  // "0a1b2c3"
- * hashObject([1, 2, 3]);         // "x7y8z9a"
- * hashObject("hello");           // "1kf3a9r"
+ * hashObject({ color: "red" });  // "h0a1b2c3"
+ * hashObject([1, 2, 3]);         // "hx7y8z9a"
+ * hashObject("hello");           // "h1kf3a9r"
  * ```
  *
  * @since 0.0.4
@@ -113,7 +113,7 @@ export function djb2(str: string): number {
 export function hashObject(input: unknown): string {
   const content = JSON.stringify(input);
   const hash = djb2(content);
-  return hash.toString(36).padStart(7, "0"); // 7 chars, zero-padded
+  return "h" + hash.toString(36).padStart(7, "0"); // 8 chars, letter prefix
 }
 
 /**

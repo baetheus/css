@@ -28,7 +28,7 @@ import {
  *
  * @example
  * ```ts
- * import type { VariableKey } from "./theme.ts";
+ * import type { VariableKey } from "./themes.ts";
  *
  * const primary: VariableKey = "--primary-color";
  * const spacing: VariableKey = "--spacing-unit";
@@ -43,7 +43,7 @@ export type VariableKey = `--${string}`;
  *
  * @example
  * ```ts
- * import type { VariableValue } from "./theme.ts";
+ * import type { VariableValue } from "./themes.ts";
  *
  * const ref: VariableValue = "var(--primary-color)";
  * const withFallback: VariableValue = "var(--primary-color, blue)";
@@ -60,7 +60,7 @@ export type VariableValue = `var(${VariableKey})`;
  *
  * @example
  * ```ts
- * import type { Variables } from "./theme.ts";
+ * import type { Variables } from "./themes.ts";
  *
  * const vars: Variables = {
  *   "--primary-color": "blue",
@@ -84,7 +84,7 @@ export type Variables = { readonly [_ in VariableKey]?: CssValue };
  *
  * @example
  * ```ts
- * import type { ThemeShape } from "./theme.ts";
+ * import type { ThemeShape } from "./themes.ts";
  *
  * const shape: ThemeShape = {
  *   colors: {
@@ -246,7 +246,7 @@ function buildVariables<T extends ThemeShape>(
 
 type ThemeCreateOptions = { readonly keepParentValues: boolean };
 const DEFAULT_THEME_CREATE_OPTIONS: ThemeCreateOptions = {
-  keepParentValues: true,
+  keepParentValues: false,
 };
 
 /**
@@ -322,7 +322,7 @@ export type Theme<T extends ThemeShape = {}> =
      *
      * @example
      * ```ts
-     * import { theme, style, render } from "./mod.ts";
+     * import { theme, style, render, join } from "./mod.ts";
      *
      * const colors = theme({
      *   primary: "blue",
@@ -333,7 +333,7 @@ export type Theme<T extends ThemeShape = {}> =
      * const darkColors = colors.create({ primary: "white" });
      *
      * // Standalone variant - outputs all values
-     * const darkColors = colors.create({ primary: "white" }, { keepParentValues: true });
+     * const standaloneDark = colors.create({ primary: "white" }, { keepParentValues: true });
      *
      * const lightTheme = style(":root", colors);
      * const darkTheme = style(".dark", darkColors);
@@ -354,7 +354,7 @@ export type Theme<T extends ThemeShape = {}> =
  *
  * @example
  * ```ts
- * import { theme, style, render } from "./mod.ts";
+ * import { theme, style, render, join } from "./mod.ts";
  *
  * // Define theme with values
  * const colors = theme({
@@ -382,7 +382,7 @@ export type Theme<T extends ThemeShape = {}> =
  * });
  * const darkTheme = style(".dark", darkColors);
  *
- * console.log(render(lightTheme.join(darkTheme, button)));
+ * console.log(render(join(lightTheme, darkTheme, button)));
  * ```
  *
  * @since 0.0.8
@@ -408,7 +408,7 @@ export function theme<T extends ThemeShape>(
  *
  * @example
  * ```ts
- * import { theme, isTheme } from "./theme.ts";
+ * import { theme, isTheme } from "./themes.ts";
  *
  * const colors = theme({ primary: "blue" });
  * isTheme(colors);                    // true

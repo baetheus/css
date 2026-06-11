@@ -13,7 +13,7 @@
 import type { Properties } from "csstype";
 import type { CssValue } from "./_internal.ts";
 import type { RawSelector, Selector } from "./selectors.ts";
-import type { Theme, Variables } from "./theme.ts";
+import type { Theme, Variables } from "./themes.ts";
 
 import {
   camelToKebab,
@@ -21,7 +21,7 @@ import {
   Styles,
   ThemeVariables,
 } from "./_internal.ts";
-import { isTheme } from "./theme.ts";
+import { isTheme } from "./themes.ts";
 
 /**
  * Options for controlling CSS output formatting.
@@ -30,7 +30,7 @@ import { isTheme } from "./theme.ts";
  *
  * @example
  * ```ts
- * import type { RenderOptions } from "./style.ts";
+ * import type { RenderOptions } from "./styles.ts";
  *
  * const minified: RenderOptions = { newline: "", indent: "", space: "" };
  * const pretty: RenderOptions = { newline: "\n", indent: "  ", space: " " };
@@ -52,7 +52,7 @@ export type RenderOptions = {
  *
  * @example
  * ```ts
- * import { render, style, STANDARD_RENDER_OPTIONS } from "./style.ts";
+ * import { render, style, STANDARD_RENDER_OPTIONS } from "./styles.ts";
  *
  * const btn = style({ color: "red" });
  * render(btn, STANDARD_RENDER_OPTIONS);
@@ -76,7 +76,7 @@ export const STANDARD_RENDER_OPTIONS: RenderOptions = {
  *
  * @example
  * ```ts
- * import { render, style, MINIMAL_RENDER_OPTIONS } from "./style.ts";
+ * import { render, style, MINIMAL_RENDER_OPTIONS } from "./styles.ts";
  *
  * const btn = style({ color: "red" });
  * render(btn, MINIMAL_RENDER_OPTIONS);
@@ -98,7 +98,7 @@ export const MINIMAL_RENDER_OPTIONS: RenderOptions = {
  *
  * @example
  * ```ts
- * import type { SelectorInput } from "./style.ts";
+ * import type { SelectorInput } from "./styles.ts";
  *
  * const nested: SelectorInput = {
  *   "&:hover": { color: "blue" },
@@ -118,7 +118,7 @@ export type SelectorInput = { readonly [K in RawSelector]?: StyleInput };
  *
  * @example
  * ```ts
- * import type { StyleInput } from "./style.ts";
+ * import type { StyleInput } from "./styles.ts";
  *
  * const input: StyleInput = {
  *   "--primary": "blue",
@@ -132,14 +132,16 @@ export type SelectorInput = { readonly [K in RawSelector]?: StyleInput };
  *
  * @since 0.0.4
  */
-export type StyleInput = Theme | (Variables & Properties & SelectorInput);
+export type StyleInput = Variables & Properties & SelectorInput & {
+  readonly [key: string]: CssValue | StyleInput | undefined;
+};
 
 /**
  * A single style block containing a selector and its style input.
  *
  * @example
  * ```ts
- * import type { StyleBlock } from "./style.ts";
+ * import type { StyleBlock } from "./styles.ts";
  *
  * const block: StyleBlock = {
  *   selector: ".button",
@@ -157,11 +159,11 @@ export type StyleBlock = {
 /**
  * A type that can yield StyleBlocks for rendering.
  *
- * Implemented by both Style and Variant to allow unified rendering.
+ * Implemented by both Style and StyleGroup to allow unified rendering.
  *
  * @example
  * ```ts
- * import { hasStyles, render } from "./style.ts";
+ * import { hasStyles, render } from "./styles.ts";
  *
  * function renderIfStyle(value: unknown): string | undefined {
  *   return hasStyles(value) ? render(value) : undefined;
@@ -182,11 +184,11 @@ export type HasStyles = {
  *
  * @example
  * ```ts
- * import type { Style } from "./style.ts";
- * import { style, render } from "./style.ts";
+ * import type { Style } from "./styles.ts";
+ * import { style, render } from "./styles.ts";
  *
  * const button: Style = style({ color: "red", padding: "8px" });
- * console.log(button.toString()); // ".abc1234"
+ * console.log(button.toString()); // "abc1234"
  * console.log(render(button));    // ".abc1234 { color: red; padding: 8px; }"
  * ```
  *
@@ -194,11 +196,12 @@ export type HasStyles = {
  */
 export type Style = HasStyles & {
   /**
-   * Returns a space-separated string of all selectors in this Style.
+   * Returns the class name if the selector is a simple class selector.
    *
-   * The result is cached after the first call for performance.
+   * Returns an empty string if the selector is not a simple class selector
+   * (e.g., element selectors, ID selectors, compound selectors).
    *
-   * @returns Space-separated selector string (e.g., ".abc123 .def456")
+   * @returns The class name (e.g., "abc1234") or an empty string
    */
   toString(): string;
 };
@@ -224,7 +227,7 @@ export type Style = HasStyles & {
  *   color: "white",
  *   padding: "8px 16px",
  * });
- * console.log(button.toString()); // ".abc1234"
+ * console.log(button.toString()); // "abc1234"
  *
  * // Custom selector
  * const heading = style("h1", {
@@ -240,7 +243,7 @@ export type Style = HasStyles & {
  *
  * @since 0.0.4
  */
-export function style(input: StyleInput): Style;
+export function style(input: Theme | StyleInput): Style;
 /**
  * Creates a Style object with a custom selector.
  *
@@ -250,33 +253,58 @@ export function style(input: StyleInput): Style;
  *
  * @since 0.0.4
  */
-export function style(selector: Selector, input: StyleInput): Style;
-export function style(): Style {
-  const block: StyleBlock = arguments.length === 1
-    ? { selector: `.${hashObject(arguments[0])}`, input: arguments[0] }
-    : { selector: arguments[0], input: arguments[1] };
+export function style(selector: Selector, input: Theme | StyleInput): Style;
+export function style(
+  selectorOrInput: Selector | Theme | StyleInput,
+  maybeInput?: Theme | StyleInput,
+): Style {
+  const block: StyleBlock = maybeInput !== undefined
+    ? { selector: selectorOrInput as Selector, input: maybeInput as StyleInput }
+    : {
+      selector: `.${hashObject(selectorOrInput)}`,
+      input: selectorOrInput as StyleInput,
+    };
 
   return {
     [Styles]: function* () {
       yield block;
     },
     toString() {
-      return block.selector;
+      return classname(block.selector);
     },
   };
 }
 
 /**
+ * Extracts the class name from a simple class selector.
+ *
+ * Returns the class name without the leading dot if the selector is a simple
+ * class selector (e.g., ".classname" returns "classname"). Returns an empty
+ * string if the selector is not a simple class selector.
+ *
+ * @param selector - The CSS selector to extract from
+ * @returns The class name or an empty string
+ *
+ * @internal
+ * @since 0.0.10
+ */
+function classname(selector: string): string {
+  // Match a simple class selector: dot followed by valid class name characters
+  const match = /^\.([a-zA-Z0-9_-]+)$/.exec(selector);
+  return match ? match[1] : "";
+}
+
+/**
  * Type guard to check if a value implements HasStyles.
  *
- * Returns true for Style, Variant, or any object with a Styles.
+ * Returns true for Style, StyleGroup, or any object with a Styles.
  *
  * @param input - The value to check
  * @returns `true` if the value implements HasStyles, `false` otherwise
  *
  * @example
  * ```ts
- * import { style, variant, hasStyles } from "./style.ts";
+ * import { style, group, hasStyles } from "./styles.ts";
  *
  * const btn = style({ color: "red" });
  * hasStyles(btn);           // true
@@ -303,7 +331,7 @@ export function hasStyles(input: unknown): input is HasStyles {
  *
  * @example
  * ```ts
- * import { properties, style } from "./style.ts";
+ * import { properties, style } from "./styles.ts";
  *
  * const flexCenter = properties({
  *   display: "flex",
@@ -334,14 +362,14 @@ export function properties<T extends StyleInput>(input: T): T {
  *
  * @example
  * ```ts
- * import { style, use } from "./style.ts";
+ * import { style, use } from "./styles.ts";
  *
  * const base = style({ padding: "8px" });
  * const active = style({ backgroundColor: "blue" });
  * const large = style({ fontSize: "1.5rem" });
  *
  * const className = use(base, active, large);
- * // ".abc1234 .def5678 .ghi9012"
+ * // "abc1234 def5678 ghi9012"
  *
  * // In JSX: <button className={use(base, active)}>Click</button>
  * ```
@@ -364,7 +392,7 @@ export function use(...styles: [Style, ...Style[]]): string {
  *
  * @example
  * ```ts
- * import { style, join, render } from "./style.ts";
+ * import { style, join, render } from "./styles.ts";
  *
  * const button = style({ color: "white", backgroundColor: "blue" });
  * const heading = style("h1", { fontSize: "2rem" });
@@ -485,7 +513,7 @@ function renderBlock(
 ): string {
   const { newline, space, indent } = options;
   const { selector, input } = block;
-  const _props = renderProperties(input, depth + 1, options);
+  const _props = renderProperties(input, depth, options);
   const _indent = indent.repeat(depth);
   return `${_indent}${selector}${space}{${newline}${_props}${newline}${_indent}}`;
 }
@@ -496,13 +524,13 @@ function renderBlock(
  * Iterates over all style blocks and renders each one.
  * Use `join()` to combine multiple styles before rendering.
  *
- * @param style - The HasStyles object to render (Style, Variant, or joined)
+ * @param style - The HasStyles object to render (Style, StyleGroup, or joined)
  * @param options - Render options for formatting (optional)
  * @returns A complete CSS string with all rules
  *
  * @example
  * ```ts
- * import { style, join, render, MINIMAL_RENDER_OPTIONS } from "./style.ts";
+ * import { style, join, render, MINIMAL_RENDER_OPTIONS } from "./styles.ts";
  *
  * const button = style({ color: "white", backgroundColor: "blue" });
  * const heading = style("h1", { fontSize: "2rem" });
@@ -534,7 +562,7 @@ export function render(
 }
 
 // =============================================================================
-// Variant
+// StyleGroup
 // =============================================================================
 
 /**
@@ -544,10 +572,10 @@ export function render(
  *
  * @example
  * ```ts
- * import type { VariantShape } from "./style.ts";
- * import { style } from "./style.ts";
+ * import type { GroupShape } from "./styles.ts";
+ * import { style } from "./styles.ts";
  *
- * const shape: VariantShape = {
+ * const shape: GroupShape = {
  *   button: {
  *     primary: style({ backgroundColor: "blue" }),
  *     secondary: style({ backgroundColor: "gray" }),
@@ -558,21 +586,21 @@ export function render(
  *
  * @since 0.0.9
  */
-export type VariantShape = {
-  readonly [key: string]: VariantShape | Style;
+export type GroupShape = {
+  readonly [key: string]: GroupShape | Style;
 };
 
 /**
- * A variant object that provides access to a tree of styles.
+ * A style group object that provides access to a tree of styles.
  *
  * Implements HasStyles, so it can be passed directly to `render()` to
  * output all contained styles.
  *
  * @example
  * ```ts
- * import { style, variant, render } from "./style.ts";
+ * import { style, group, render } from "./styles.ts";
  *
- * const v = variant({
+ * const g = group({
  *   button: {
  *     primary: style({ backgroundColor: "blue" }),
  *     secondary: style({ backgroundColor: "gray" }),
@@ -580,50 +608,50 @@ export type VariantShape = {
  * });
  *
  * // Access individual styles
- * const className = v.button.primary.toString();
+ * const className = g.button.primary.toString();
  *
  * // Render all styles
- * console.log(render(v));
+ * console.log(render(g));
  * ```
  *
  * @since 0.0.9
  */
-export type Variant<T extends VariantShape> = T & HasStyles;
+export type StyleGroup<T extends GroupShape> = T & HasStyles;
 
 /**
- * Recursively yields all StyleBlocks from a VariantShape.
+ * Recursively yields all StyleBlocks from a GroupShape.
  *
- * @param shape - The variant shape to walk
+ * @param shape - The group shape to walk
  * @yields StyleBlock objects from all leaf styles
  *
  * @internal
  * @since 0.0.9
  */
-function* walkVariant(shape: VariantShape): Generator<StyleBlock> {
+function* walkGroup(shape: GroupShape): Generator<StyleBlock> {
   for (const key in shape) {
     const value = shape[key];
     if (hasStyles(value)) {
       yield* value[Styles]();
     } else {
-      yield* walkVariant(value);
+      yield* walkGroup(value);
     }
   }
 }
 
 /**
- * Creates a Variant from a tree of styles.
+ * Creates a StyleGroup from a tree of styles.
  *
- * The variant provides direct access to nested styles via dot notation
+ * The group provides direct access to nested styles via dot notation
  * and implements HasStyles for rendering all contained styles at once.
  *
  * @param shape - An object defining the style tree structure
- * @returns A Variant with the same shape plus HasStyles capability
+ * @returns A StyleGroup with the same shape plus HasStyles capability
  *
  * @example
  * ```ts
- * import { style, variant, render } from "./style.ts";
+ * import { style, group, render } from "./styles.ts";
  *
- * const v = variant({
+ * const g = group({
  *   button: {
  *     primary: style({ backgroundColor: "blue", color: "white" }),
  *     secondary: style({ backgroundColor: "gray", color: "black" }),
@@ -635,23 +663,23 @@ function* walkVariant(shape: VariantShape): Generator<StyleBlock> {
  * });
  *
  * // Access individual styles for use in HTML
- * console.log(v.button.primary.toString()); // ".abc1234"
+ * console.log(g.button.primary.toString()); // "abc1234"
  *
  * // Render all styles to CSS
- * console.log(render(v));
+ * console.log(render(g));
  * ```
  *
  * @since 0.0.9
  */
-export function variant<T extends VariantShape>(shape: T): Variant<T> {
+export function group<T extends GroupShape>(shape: T): StyleGroup<T> {
   const result = { ...shape };
 
   Object.defineProperty(result, Styles, {
     value: function* (): Generator<StyleBlock> {
-      yield* walkVariant(shape);
+      yield* walkGroup(shape);
     },
     enumerable: false,
   });
 
-  return result as Variant<T>;
+  return result as StyleGroup<T>;
 }

@@ -18,7 +18,7 @@
  * });
  *
  * // Use in HTML/JSX
- * console.log(button.toString()); // ".a1b2c3d4"
+ * console.log(button.toString()); // "a1b2c3d4"
  *
  * // Render to CSS string
  * console.log(render(button));
@@ -37,11 +37,9 @@
  * const card = style({
  *   padding: "16px",
  *   transition: "transform 0.2s",
- *   select: {
- *     "&:hover": { transform: "scale(1.02)" },
- *     "& > h2": { marginTop: 0 },
- *     "@media (min-width: 768px)": { padding: "24px" },
- *   },
+ *   "&:hover": { transform: "scale(1.02)" },
+ *   "& > h2": { marginTop: 0 },
+ *   "@media (min-width: 768px)": { padding: "24px" },
  * });
  * ```
  *
@@ -55,7 +53,7 @@
  *
  * // Combine into a single class string for use in HTML
  * const className = use(base, primary, large);
- * // ".abc123 .def456 .ghi789"
+ * // "abc123 def456 ghi789"
  *
  * // Or use the join function to combine styles for rendering
  * const combined = join(base, primary, large);
@@ -134,11 +132,12 @@
  * @since 0.0.4
  */
 
-export type { HasStyles, RenderOptions, Style, Variant } from "./style.ts";
-export type { Theme, Variables } from "./theme.ts";
+export type { HasStyles, RenderOptions, Style, StyleGroup } from "./styles.ts";
+export type { Theme, Variables } from "./themes.ts";
 export type { CSSAtRule } from "./atrules.ts";
 
 export {
+  group,
   hasStyles,
   join,
   MINIMAL_RENDER_OPTIONS,
@@ -147,7 +146,6 @@ export {
   STANDARD_RENDER_OPTIONS,
   style,
   use,
-  variant,
-} from "./style.ts";
-export { fallback, isTheme, theme } from "./theme.ts";
+} from "./styles.ts";
+export { fallback, isTheme, theme } from "./themes.ts";
 export { at } from "./atrules.ts";
