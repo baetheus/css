@@ -183,7 +183,7 @@ export class Style implements Iterable<StyleBlock> {
    *
    * @yields StyleBlock objects contained in this Style
    */
-  *[Symbol.iterator]() {
+  *[Symbol.iterator](): Generator<StyleBlock> {
     yield* this.blocks();
   }
 
