@@ -1,6 +1,6 @@
 import { assertEquals, assertNotEquals } from "@std/assert";
 import {
-  isStyle,
+  hasStyles,
   join,
   MINIMAL_RENDER_OPTIONS,
   properties,
@@ -12,6 +12,7 @@ import {
   style,
   type StyleInput,
   use,
+  variant,
 } from "../style.ts";
 
 // =============================================================================
@@ -66,36 +67,50 @@ Deno.test("style - accepts nested selectors", () => {
 });
 
 // =============================================================================
-// isStyle tests
+// hasStyles tests
 // =============================================================================
 
-Deno.test("isStyle - returns true for Style objects", () => {
+Deno.test("hasStyles - returns true for Style objects", () => {
   const btn = style({ color: "red" });
-  assertEquals(isStyle(btn), true);
+  assertEquals(hasStyles(btn), true);
 });
 
-Deno.test("isStyle - returns false for plain objects", () => {
-  assertEquals(isStyle({ color: "red" }), false);
+Deno.test("hasStyles - returns true for Variant objects", () => {
+  const v = variant({
+    primary: style({ color: "blue" }),
+  });
+  assertEquals(hasStyles(v), true);
 });
 
-Deno.test("isStyle - returns false for null", () => {
-  assertEquals(isStyle(null), false);
+Deno.test("hasStyles - returns true for joined styles", () => {
+  const a = style({ color: "red" });
+  const b = style({ color: "blue" });
+  const joined = join(a, b);
+  assertEquals(hasStyles(joined), true);
 });
 
-Deno.test("isStyle - returns false for undefined", () => {
-  assertEquals(isStyle(undefined), false);
+Deno.test("hasStyles - returns false for plain objects", () => {
+  assertEquals(hasStyles({ color: "red" }), false);
 });
 
-Deno.test("isStyle - returns false for strings", () => {
-  assertEquals(isStyle(".button"), false);
+Deno.test("hasStyles - returns false for null", () => {
+  assertEquals(hasStyles(null), false);
 });
 
-Deno.test("isStyle - returns false for arrays", () => {
-  assertEquals(isStyle([]), false);
+Deno.test("hasStyles - returns false for undefined", () => {
+  assertEquals(hasStyles(undefined), false);
 });
 
-Deno.test("isStyle - returns false for numbers", () => {
-  assertEquals(isStyle(42), false);
+Deno.test("hasStyles - returns false for strings", () => {
+  assertEquals(hasStyles(".button"), false);
+});
+
+Deno.test("hasStyles - returns false for arrays", () => {
+  assertEquals(hasStyles([]), false);
+});
+
+Deno.test("hasStyles - returns false for numbers", () => {
+  assertEquals(hasStyles(42), false);
 });
 
 // =============================================================================
@@ -349,13 +364,6 @@ Deno.test("join - combines two styles", () => {
   assertEquals(css.includes("blue"), true);
 });
 
-Deno.test("join - toString returns space-separated selectors", () => {
-  const a = style(".a", { color: "red" });
-  const b = style(".b", { color: "blue" });
-  const combined = join(a, b);
-  assertEquals(combined.toString(), ".a .b");
-});
-
 Deno.test("join - supports nested joins", () => {
   const a = style(".a", { color: "red" });
   const b = style(".b", { color: "blue" });
@@ -390,20 +398,62 @@ Deno.test("join - can be rendered multiple times", () => {
 });
 
 // =============================================================================
-// Style.join tests
+// variant tests
 // =============================================================================
 
-Deno.test("Style.join - returns this when called with no arguments", () => {
-  const a = style(".a", { color: "red" });
-  const result = a.join();
-  assertEquals(result, a);
-  assertEquals(result.toString(), ".a");
+Deno.test("variant - creates variant from shape", () => {
+  const v = variant({
+    primary: style(".primary", { color: "blue" }),
+    secondary: style(".secondary", { color: "gray" }),
+  });
+  assertEquals(v.primary.toString(), ".primary");
+  assertEquals(v.secondary.toString(), ".secondary");
 });
 
-Deno.test("Style.join - combines styles same as top-level join", () => {
-  const a = style(".a", { color: "red" });
-  const b = style(".b", { color: "blue" });
-  const instanceJoin = a.join(b);
-  const topLevelJoin = join(a, b);
-  assertEquals(render(instanceJoin), render(topLevelJoin));
+Deno.test("variant - renders all leaf styles", () => {
+  const v = variant({
+    primary: style(".primary", { color: "blue" }),
+    secondary: style(".secondary", { color: "gray" }),
+  });
+  const css = render(v);
+  assertEquals(css.includes(".primary"), true);
+  assertEquals(css.includes(".secondary"), true);
+  assertEquals(css.includes("blue"), true);
+  assertEquals(css.includes("gray"), true);
+});
+
+Deno.test("variant - handles nested shapes", () => {
+  const v = variant({
+    button: {
+      primary: style(".btn-primary", { color: "white" }),
+      secondary: style(".btn-secondary", { color: "black" }),
+    },
+    text: style(".text", { fontSize: "1rem" }),
+  });
+  assertEquals(v.button.primary.toString(), ".btn-primary");
+  assertEquals(v.button.secondary.toString(), ".btn-secondary");
+  assertEquals(v.text.toString(), ".text");
+  const css = render(v);
+  assertEquals(css.includes(".btn-primary"), true);
+  assertEquals(css.includes(".btn-secondary"), true);
+  assertEquals(css.includes(".text"), true);
+});
+
+Deno.test("variant - can be passed to join", () => {
+  const v = variant({
+    primary: style(".primary", { color: "blue" }),
+  });
+  const extra = style(".extra", { padding: "8px" });
+  const combined = join(v, extra);
+  const css = render(combined);
+  assertEquals(css.includes(".primary"), true);
+  assertEquals(css.includes(".extra"), true);
+});
+
+Deno.test("variant - StyleBlockSymbol is not enumerable", () => {
+  const v = variant({
+    primary: style(".primary", { color: "blue" }),
+  });
+  const keys = Object.keys(v);
+  assertEquals(keys, ["primary"]);
 });

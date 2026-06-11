@@ -15,7 +15,12 @@ import type { CssValue } from "./_internal.ts";
 import type { RawSelector, Selector } from "./selectors.ts";
 import type { Theme, Variables } from "./theme.ts";
 
-import { camelToKebab, hashObject, ThemeVariables } from "./_internal.ts";
+import {
+  camelToKebab,
+  hashObject,
+  Styles,
+  ThemeVariables,
+} from "./_internal.ts";
 import { isTheme } from "./theme.ts";
 
 /**
@@ -150,6 +155,26 @@ export type StyleBlock = {
 };
 
 /**
+ * A type that can yield StyleBlocks for rendering.
+ *
+ * Implemented by both Style and Variant to allow unified rendering.
+ *
+ * @example
+ * ```ts
+ * import { hasStyles, render } from "./style.ts";
+ *
+ * function renderIfStyle(value: unknown): string | undefined {
+ *   return hasStyles(value) ? render(value) : undefined;
+ * }
+ * ```
+ *
+ * @since 0.0.9
+ */
+export type HasStyles = {
+  readonly [Styles]: () => Generator<StyleBlock>;
+};
+
+/**
  * A branded style object containing an iterable of style blocks.
  *
  * Created by the `style()` function. Can be converted to a class name
@@ -167,26 +192,7 @@ export type StyleBlock = {
  *
  * @since 0.0.4
  */
-export class Style implements Iterable<StyleBlock> {
-  /** Cached selector string for toString() */
-  #selectors?: string;
-
-  /**
-   * Creates a new Style from a generator function that yields StyleBlocks.
-   *
-   * @param blocks - A generator function that yields StyleBlock objects
-   */
-  constructor(private blocks: () => Generator<StyleBlock>) {}
-
-  /**
-   * Iterates over all StyleBlocks in this Style.
-   *
-   * @yields StyleBlock objects contained in this Style
-   */
-  *[Symbol.iterator](): Generator<StyleBlock> {
-    yield* this.blocks();
-  }
-
+export type Style = HasStyles & {
   /**
    * Returns a space-separated string of all selectors in this Style.
    *
@@ -194,44 +200,8 @@ export class Style implements Iterable<StyleBlock> {
    *
    * @returns Space-separated selector string (e.g., ".abc123 .def456")
    */
-  toString(): string {
-    if (this.#selectors === undefined) {
-      this.#selectors = Array.from(this.blocks()).map((b) => b.selector).join(
-        " ",
-      );
-    }
-    return this.#selectors as string;
-  }
-
-  /**
-   * Combines this Style with other Styles into a single Style.
-   *
-   * Creates a new Style that yields all blocks from this Style followed
-   * by all blocks from the provided Styles. Useful for combining styles
-   * before rendering.
-   *
-   * @param styles - Additional Style objects to combine
-   * @returns A new Style containing all combined blocks
-   *
-   * @example
-   * ```ts
-   * const button = style({ color: "blue" });
-   * const large = style({ fontSize: "1.5rem" });
-   * const combined = button.join(large);
-   * ```
-   */
-  join(...styles: readonly Style[]): Style {
-    if (styles.length === 0) {
-      return this;
-    }
-    const _styles = [this, ...styles];
-    return new Style(function* joinedStyles() {
-      for (const style of _styles) {
-        yield* style;
-      }
-    });
-  }
-}
+  toString(): string;
+};
 
 /**
  * Creates a Style object from CSS properties or a Theme.
@@ -286,31 +256,40 @@ export function style(): Style {
     ? { selector: `.${hashObject(arguments[0])}`, input: arguments[0] }
     : { selector: arguments[0], input: arguments[1] };
 
-  return new Style(function* newStyle() {
-    yield block;
-  });
+  return {
+    [Styles]: function* () {
+      yield block;
+    },
+    toString() {
+      return block.selector;
+    },
+  };
 }
 
 /**
- * Type guard to check if a value is a Style object.
+ * Type guard to check if a value implements HasStyles.
+ *
+ * Returns true for Style, Variant, or any object with a Styles.
  *
  * @param input - The value to check
- * @returns `true` if the value is a Style, `false` otherwise
+ * @returns `true` if the value implements HasStyles, `false` otherwise
  *
  * @example
  * ```ts
- * import { style, isStyle } from "./style.ts";
+ * import { style, variant, hasStyles } from "./style.ts";
  *
  * const btn = style({ color: "red" });
- * isStyle(btn);           // true
- * isStyle({ color: "red" }); // false
- * isStyle("string");      // false
+ * hasStyles(btn);           // true
+ * hasStyles({ color: "red" }); // false
+ * hasStyles("string");      // false
  * ```
  *
- * @since 0.0.4
+ * @since 0.0.9
  */
-export function isStyle(input: unknown): input is Style {
-  return input instanceof Style;
+export function hasStyles(input: unknown): input is HasStyles {
+  return input !== null &&
+    typeof input === "object" &&
+    Styles in input;
 }
 
 /**
@@ -374,13 +353,14 @@ export function use(...styles: [Style, ...Style[]]): string {
 }
 
 /**
- * Combines multiple Style objects into a single Style for rendering.
+ * Combines multiple HasStyles objects into a single HasStyles for rendering.
  *
- * Joins multiple styles so they can be rendered together as a single CSS output.
- * This is useful for combining styles before passing to `render()`.
+ * Joins multiple styles or variants so they can be rendered together as a
+ * single CSS output. This is useful for combining styles before passing to
+ * `render()`.
  *
- * @param styles - Two or more Style objects to combine
- * @returns A single Style containing all style blocks
+ * @param styles - Two or more HasStyles objects to combine
+ * @returns A single HasStyles containing all style blocks
  *
  * @example
  * ```ts
@@ -402,9 +382,14 @@ export function use(...styles: [Style, ...Style[]]): string {
  *
  * @since 0.0.4
  */
-export function join(...styles: [Style, ...Style[]]): Style {
-  const [first, ...rest] = styles;
-  return first.join(...rest);
+export function join(...styles: [HasStyles, ...HasStyles[]]): HasStyles {
+  return {
+    [Styles]: function* () {
+      for (const s of styles) {
+        yield* s[Styles]();
+      }
+    },
+  };
 }
 
 /**
@@ -506,12 +491,12 @@ function renderBlock(
 }
 
 /**
- * Renders a Style object to a CSS string.
+ * Renders a HasStyles object to a CSS string.
  *
- * Iterates over all style blocks in the style and renders each one.
+ * Iterates over all style blocks and renders each one.
  * Use `join()` to combine multiple styles before rendering.
  *
- * @param style - The Style object to render
+ * @param style - The HasStyles object to render (Style, Variant, or joined)
  * @param options - Render options for formatting (optional)
  * @returns A complete CSS string with all rules
  *
@@ -540,10 +525,133 @@ function renderBlock(
  * @since 0.0.4
  */
 export function render(
-  style: Style,
+  style: HasStyles,
   options: RenderOptions = STANDARD_RENDER_OPTIONS,
 ): string {
-  return Array.from(style)
+  return Array.from(style[Styles]())
     .map((block) => renderBlock(block, 0, options))
     .join(options.newline);
+}
+
+// =============================================================================
+// Variant
+// =============================================================================
+
+/**
+ * Recursive shape type for defining a tree of styles.
+ *
+ * `Style` marks a leaf, nested objects mark groups.
+ *
+ * @example
+ * ```ts
+ * import type { VariantShape } from "./style.ts";
+ * import { style } from "./style.ts";
+ *
+ * const shape: VariantShape = {
+ *   button: {
+ *     primary: style({ backgroundColor: "blue" }),
+ *     secondary: style({ backgroundColor: "gray" }),
+ *   },
+ *   text: style({ color: "black" }),
+ * };
+ * ```
+ *
+ * @since 0.0.9
+ */
+export type VariantShape = {
+  readonly [key: string]: VariantShape | Style;
+};
+
+/**
+ * A variant object that provides access to a tree of styles.
+ *
+ * Implements HasStyles, so it can be passed directly to `render()` to
+ * output all contained styles.
+ *
+ * @example
+ * ```ts
+ * import { style, variant, render } from "./style.ts";
+ *
+ * const v = variant({
+ *   button: {
+ *     primary: style({ backgroundColor: "blue" }),
+ *     secondary: style({ backgroundColor: "gray" }),
+ *   },
+ * });
+ *
+ * // Access individual styles
+ * const className = v.button.primary.toString();
+ *
+ * // Render all styles
+ * console.log(render(v));
+ * ```
+ *
+ * @since 0.0.9
+ */
+export type Variant<T extends VariantShape> = T & HasStyles;
+
+/**
+ * Recursively yields all StyleBlocks from a VariantShape.
+ *
+ * @param shape - The variant shape to walk
+ * @yields StyleBlock objects from all leaf styles
+ *
+ * @internal
+ * @since 0.0.9
+ */
+function* walkVariant(shape: VariantShape): Generator<StyleBlock> {
+  for (const key in shape) {
+    const value = shape[key];
+    if (hasStyles(value)) {
+      yield* value[Styles]();
+    } else {
+      yield* walkVariant(value);
+    }
+  }
+}
+
+/**
+ * Creates a Variant from a tree of styles.
+ *
+ * The variant provides direct access to nested styles via dot notation
+ * and implements HasStyles for rendering all contained styles at once.
+ *
+ * @param shape - An object defining the style tree structure
+ * @returns A Variant with the same shape plus HasStyles capability
+ *
+ * @example
+ * ```ts
+ * import { style, variant, render } from "./style.ts";
+ *
+ * const v = variant({
+ *   button: {
+ *     primary: style({ backgroundColor: "blue", color: "white" }),
+ *     secondary: style({ backgroundColor: "gray", color: "black" }),
+ *   },
+ *   text: {
+ *     heading: style({ fontSize: "2rem", fontWeight: "bold" }),
+ *     body: style({ fontSize: "1rem" }),
+ *   },
+ * });
+ *
+ * // Access individual styles for use in HTML
+ * console.log(v.button.primary.toString()); // ".abc1234"
+ *
+ * // Render all styles to CSS
+ * console.log(render(v));
+ * ```
+ *
+ * @since 0.0.9
+ */
+export function variant<T extends VariantShape>(shape: T): Variant<T> {
+  const result = { ...shape };
+
+  Object.defineProperty(result, Styles, {
+    value: function* (): Generator<StyleBlock> {
+      yield* walkVariant(shape);
+    },
+    enumerable: false,
+  });
+
+  return result as Variant<T>;
 }

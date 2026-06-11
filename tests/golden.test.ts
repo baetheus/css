@@ -191,14 +191,6 @@ Deno.test("golden - design system renders expected CSS", () => {
   assertEquals(css, EXPECTED_CSS);
 });
 
-Deno.test("golden - toString returns all selectors", () => {
-  const selectors = allStyles.toString();
-  assertEquals(
-    selectors,
-    ":root .dark body h1 .text-sm .btn .btn-primary .btn-secondary .card .card-header .alert .alert-success .alert-error .container .spacer",
-  );
-});
-
 Deno.test("golden - theme var references are correct", () => {
   assertEquals(designSystem.colors.primary, "var(--ds-colors-primary)");
   assertEquals(

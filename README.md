@@ -63,7 +63,7 @@ console.log(render(card));
 ### Custom Selectors
 
 ```ts
-import { render, style } from "@baetheus/css";
+import { join, render, style } from "@baetheus/css";
 
 // Style an HTML element directly
 const body = style("body", { margin: "0", fontFamily: "sans-serif" });
@@ -71,14 +71,14 @@ const body = style("body", { margin: "0", fontFamily: "sans-serif" });
 // Style by ID
 const header = style("#header", { position: "fixed", top: "0" });
 
-// Use the join method to combine styles for rendering
-console.log(render(body.join(header)));
+// Use the join function to combine styles for rendering
+console.log(render(join(body, header)));
 ```
 
 ### CSS Variables / Theming
 
 ```ts
-import { fallback, render, style, theme } from "@baetheus/css";
+import { fallback, join, render, style, theme } from "@baetheus/css";
 
 // Define a theme with values (nested structure becomes CSS variables)
 const colors = theme({
@@ -118,8 +118,8 @@ const darkColors = colors.create({
 const darkTheme = style(".dark", darkColors);
 
 // Apply theme by adding .dark class to switch themes
-// Use join() or Style.join() to combine styles for rendering
-console.log(render(lightTheme.join(darkTheme, card)));
+// Use join() to combine styles for rendering
+console.log(render(join(lightTheme, darkTheme, card)));
 ```
 
 ### Combining Styles
@@ -139,7 +139,7 @@ const className = use(base, primary, large);
 ### At-Rules
 
 ```ts
-import { at, render } from "@baetheus/css";
+import { at, join, render } from "@baetheus/css";
 
 // @font-face
 const roboto = at("@font-face", {
@@ -168,8 +168,8 @@ const firstPage = at("@page :first", {
   marginTop: "2in",
 });
 
-// Use join method to combine styles
-console.log(render(roboto.join(themeColor, thumbs, firstPage)));
+// Use join function to combine styles
+console.log(render(join(roboto, themeColor, thumbs, firstPage)));
 ```
 
 ### Render Options
@@ -210,25 +210,49 @@ const card = style({
 });
 ```
 
+### Variants
+
+```ts
+import { render, style, variant } from "@baetheus/css";
+
+// Create a variant tree to organize related styles
+const v = variant({
+  button: {
+    primary: style({ backgroundColor: "blue", color: "white" }),
+    secondary: style({ backgroundColor: "gray", color: "black" }),
+  },
+  text: {
+    heading: style({ fontSize: "2rem", fontWeight: "bold" }),
+    body: style({ fontSize: "1rem" }),
+  },
+});
+
+// Access individual styles via dot notation
+element.className = v.button.primary.toString();
+
+// Render all styles at once
+console.log(render(v));
+```
+
 ## API Reference
 
 ### Core Functions
 
 - `style(input)` - Creates a Style with auto-generated class name
 - `style(selector, input)` - Creates a Style with a custom selector
-- `render(style, options?)` - Renders a Style to CSS string
-- `join(...styles)` - Combines multiple styles into a single Style for rendering
+- `render(style, options?)` - Renders a HasStyles object (Style, Variant, or
+  joined) to CSS string
+- `join(...styles)` - Combines multiple HasStyles objects into one for rendering
 - `use(...styles)` - Combines multiple styles into a class name string
 - `properties(input)` - Identity function for type-checked style objects
-- `isStyle(value)` - Type guard for Style objects
+- `variant(shape)` - Creates a Variant from a tree of styles
+- `hasStyles(value)` - Type guard for HasStyles objects (Style or Variant)
 
-### Style Class
+### Style Object
 
-The `Style` class is iterable and has the following methods:
+A Style object has the following method:
 
-- `toString()` - Returns space-separated selectors for all style blocks
-- `join(...styles)` - Combines this style with others into a single Style for
-  rendering
+- `toString()` - Returns the selector for the style block
 
 ### Theming
 
@@ -238,6 +262,14 @@ The `Style` class is iterable and has the following methods:
 - `fallback(ref, ...values)` - Adds fallback values to a CSS variable reference
 - `isTheme(value)` - Type guard for Theme objects
 - Pass a theme directly to `style()` to generate CSS custom properties
+
+### Variants
+
+- `variant(shape)` - Creates a Variant from a tree of styles (nested object of
+  styles)
+- Variant objects implement HasStyles, so they can be passed directly to
+  `render()`
+- Access individual styles via dot notation (e.g., `v.button.primary`)
 
 ### At-Rules
 

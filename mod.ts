@@ -57,8 +57,8 @@
  * const className = use(base, primary, large);
  * // ".abc123 .def456 .ghi789"
  *
- * // Or use the join method to combine styles for rendering
- * const combined = base.join(primary, large);
+ * // Or use the join function to combine styles for rendering
+ * const combined = join(base, primary, large);
  * console.log(render(combined));
  * ```
  *
@@ -95,13 +95,13 @@
  * });
  * const darkTheme = style(".dark", darkColors);
  *
- * // Use join() or Style.join() method to combine styles for rendering
- * console.log(render(lightTheme.join(darkTheme, card)));
+ * // Use join() to combine styles for rendering
+ * console.log(render(join(lightTheme, darkTheme, card)));
  * ```
  *
  * @example At-rules (font-face, keyframes, etc.)
  * ```ts
- * import { at, render } from "@baetheus/css";
+ * import { at, join, render } from "@baetheus/css";
  *
  * const roboto = at("@font-face", {
  *   fontFamily: "Roboto",
@@ -116,7 +116,7 @@
  *   initialValue: "blue",
  * });
  *
- * console.log(render(roboto.join(themeColor)));
+ * console.log(render(join(roboto, themeColor)));
  * ```
  *
  * @example Minified output
@@ -134,7 +134,14 @@
  * @since 0.0.4
  */
 
-export type { RenderOptions, Style, StyleBlock } from "./style.ts";
+export type {
+  HasStyles,
+  RenderOptions,
+  Style,
+  StyleBlock,
+  Variant,
+  VariantShape,
+} from "./style.ts";
 export type {
   DeepPartial,
   MapShape,
@@ -147,7 +154,7 @@ export type {
 export type { CSSAtRule } from "./atrules.ts";
 
 export {
-  isStyle,
+  hasStyles,
   join,
   MINIMAL_RENDER_OPTIONS,
   properties,
@@ -155,6 +162,7 @@ export {
   STANDARD_RENDER_OPTIONS,
   style,
   use,
+  variant,
 } from "./style.ts";
 export { fallback, isTheme, theme } from "./theme.ts";
 export { at } from "./atrules.ts";

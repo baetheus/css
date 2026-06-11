@@ -38,6 +38,14 @@ export const ThemeVariables = Symbol("@baetheus/css/theme/variables");
 export const ThemeReferences = Symbol("@baetheus/css/theme/references");
 
 /**
+ * Symbol key for accessing style block generators.
+ * Used by Style, Variant, and any type implementing HasStyles.
+ * @internal
+ * @since 0.0.9
+ */
+export const Styles = Symbol("@baetheus/css/style");
+
+/**
  * A CSS value that can be either a string or number.
  *
  * @example
