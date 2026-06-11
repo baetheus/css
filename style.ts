@@ -12,10 +12,11 @@
 
 import type { Properties } from "csstype";
 import type { CssValue } from "./_internal.ts";
-import type { Selector } from "./selectors.ts";
-import type { Variables } from "./variables.ts";
+import type { RawSelector, Selector } from "./selectors.ts";
+import type { Theme, Variables } from "./theme.ts";
 
-import { camelToKebab, hashObject } from "./_internal.ts";
+import { camelToKebab, hashObject, ThemeVariables } from "./_internal.ts";
+import { isTheme } from "./theme.ts";
 
 /**
  * Options for controlling CSS output formatting.
@@ -102,7 +103,7 @@ export const MINIMAL_RENDER_OPTIONS: RenderOptions = {
  *
  * @since 0.0.4
  */
-export type SelectorInput = { readonly [K in Selector]?: StyleInput };
+export type SelectorInput = { readonly [K in RawSelector]?: StyleInput };
 
 /**
  * Input for defining CSS styles.
@@ -126,9 +127,7 @@ export type SelectorInput = { readonly [K in Selector]?: StyleInput };
  *
  * @since 0.0.4
  */
-export type StyleInput = Variables & Properties & {
-  readonly select?: SelectorInput;
-};
+export type StyleInput = Theme | (Variables & Properties & SelectorInput);
 
 /**
  * A single style block containing a selector and its style input.
@@ -169,14 +168,32 @@ export type StyleBlock = {
  * @since 0.0.4
  */
 export class Style implements Iterable<StyleBlock> {
+  /** Cached selector string for toString() */
   #selectors?: string;
 
+  /**
+   * Creates a new Style from a generator function that yields StyleBlocks.
+   *
+   * @param blocks - A generator function that yields StyleBlock objects
+   */
   constructor(private blocks: () => Generator<StyleBlock>) {}
 
+  /**
+   * Iterates over all StyleBlocks in this Style.
+   *
+   * @yields StyleBlock objects contained in this Style
+   */
   *[Symbol.iterator]() {
     yield* this.blocks();
   }
 
+  /**
+   * Returns a space-separated string of all selectors in this Style.
+   *
+   * The result is cached after the first call for performance.
+   *
+   * @returns Space-separated selector string (e.g., ".abc123 .def456")
+   */
   toString(): string {
     if (this.#selectors === undefined) {
       this.#selectors = Array.from(this.blocks()).map((b) => b.selector).join(
@@ -186,6 +203,23 @@ export class Style implements Iterable<StyleBlock> {
     return this.#selectors as string;
   }
 
+  /**
+   * Combines this Style with other Styles into a single Style.
+   *
+   * Creates a new Style that yields all blocks from this Style followed
+   * by all blocks from the provided Styles. Useful for combining styles
+   * before rendering.
+   *
+   * @param styles - Additional Style objects to combine
+   * @returns A new Style containing all combined blocks
+   *
+   * @example
+   * ```ts
+   * const button = style({ color: "blue" });
+   * const large = style({ fontSize: "1.5rem" });
+   * const combined = button.join(large);
+   * ```
+   */
   join(...styles: readonly Style[]): Style {
     if (styles.length === 0) {
       return this;
@@ -200,18 +234,19 @@ export class Style implements Iterable<StyleBlock> {
 }
 
 /**
- * Creates a Style object from CSS properties.
+ * Creates a Style object from CSS properties or a Theme.
  *
  * When called with just properties, generates a unique class name based on
  * a hash of the input. When called with a selector and properties, uses
- * the provided selector.
+ * the provided selector. When passed a Theme, extracts its CSS custom
+ * property declarations.
  *
- * @param input - CSS properties and optional nested selectors
+ * @param input - CSS properties, nested selectors, or a Theme object
  * @returns A Style object that can be rendered to CSS
  *
  * @example
  * ```ts
- * import { style, render } from "./style.ts";
+ * import { style, render, theme } from "./mod.ts";
  *
  * // Auto-generated class name
  * const button = style({
@@ -227,6 +262,10 @@ export class Style implements Iterable<StyleBlock> {
  *   fontWeight: "bold",
  * });
  * console.log(heading.toString()); // "h1"
+ *
+ * // Theme creates CSS custom properties
+ * const colors = theme({ primary: "blue" });
+ * const themeStyle = style(":root", colors);
  * ```
  *
  * @since 0.0.4
@@ -236,7 +275,7 @@ export function style(input: StyleInput): Style;
  * Creates a Style object with a custom selector.
  *
  * @param selector - The CSS selector to use
- * @param input - CSS properties and optional nested selectors
+ * @param input - CSS properties, nested selectors, or a Theme object
  * @returns A Style object that can be rendered to CSS
  *
  * @since 0.0.4
@@ -246,6 +285,7 @@ export function style(): Style {
   const block: StyleBlock = arguments.length === 1
     ? { selector: `.${hashObject(arguments[0])}`, input: arguments[0] }
     : { selector: arguments[0], input: arguments[1] };
+
   return new Style(function* newStyle() {
     yield block;
   });
@@ -300,7 +340,7 @@ export function isStyle(input: unknown): input is Style {
  *
  * @since 0.0.4
  */
-export function properties(input: StyleInput): StyleInput {
+export function properties<T extends StyleInput>(input: T): T {
   return input;
 }
 
@@ -395,6 +435,20 @@ function renderProperty(
 }
 
 /**
+ * Type guard to check if a value is a CSS value (string or number).
+ *
+ * @param value - The value to check
+ * @returns `true` if the value is a string or number, `false` otherwise
+ *
+ * @internal
+ * @since 0.0.4
+ */
+function isCssValue(value: unknown): value is CssValue {
+  const _type = typeof value;
+  return _type === "string" || _type === "number";
+}
+
+/**
  * Renders nested selector blocks.
  *
  * Recursively renders each nested selector and its styles at the
@@ -408,16 +462,20 @@ function renderProperty(
  * @internal
  * @since 0.0.4
  */
-function renderSelect(
-  input: SelectorInput,
+function renderProperties(
+  input: StyleInput,
   depth: number = 0,
   options: RenderOptions = STANDARD_RENDER_OPTIONS,
 ): string {
+  type Props = Properties & Variables & SelectorInput;
   const { newline } = options;
-  return Object.entries(input).map(([s, i]) =>
-    i !== undefined
-      ? renderBlock({ selector: s, input: i }, depth + 1, options)
-      : ""
+  const _properties = isTheme(input) ? input[ThemeVariables] as Props : input;
+  return Object.entries(_properties).filter(([_, i]) => i !== undefined).map((
+    [key, value],
+  ) =>
+    isCssValue(value)
+      ? renderProperty(key, value, depth + 1, options)
+      : renderBlock({ selector: key, input: value }, depth + 1, options)
   ).join(newline);
 }
 
@@ -442,14 +500,9 @@ function renderBlock(
 ): string {
   const { newline, space, indent } = options;
   const { selector, input } = block;
-  const props = Object.entries(input).map(([key, value]) =>
-    key === "select"
-      ? renderSelect(value, depth, options)
-      : renderProperty(key, value, depth + 1, options)
-  ).join(newline);
-  return `${
-    indent.repeat(depth)
-  }${selector}${space}{${newline}${props}${newline}${indent.repeat(depth)}}`;
+  const _props = renderProperties(input, depth + 1, options);
+  const _indent = indent.repeat(depth);
+  return `${_indent}${selector}${space}{${newline}${_props}${newline}${_indent}}`;
 }
 
 /**

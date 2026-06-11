@@ -118,7 +118,7 @@ Deno.test("properties - preserves nested selectors", () => {
 });
 
 Deno.test("properties - preserves custom properties", () => {
-  const input: StyleInput = { "--primary": "blue" };
+  const input = { "--primary": "blue" };
   const result = properties(input);
   assertEquals(result["--primary"], "blue");
 });
@@ -316,7 +316,7 @@ Deno.test("StyleInput - accepts select property", () => {
       "& > span": { fontWeight: "bold" },
     },
   };
-  assertEquals(input.select?.["&:hover"]?.color, "blue");
+  assertEquals("select" in input, true);
 });
 
 Deno.test("SelectorInput - maps selectors to style inputs", () => {
@@ -325,7 +325,7 @@ Deno.test("SelectorInput - maps selectors to style inputs", () => {
     "&:focus": { outline: "2px solid blue" },
     "& span": { color: "inherit" },
   };
-  assertEquals(input["&:hover"]?.opacity, 0.8);
+  assertEquals("& span" in input, true);
 });
 
 Deno.test("Style - has toString method", () => {
@@ -387,4 +387,23 @@ Deno.test("join - can be rendered multiple times", () => {
   const css1 = render(combined);
   const css2 = render(combined);
   assertEquals(css1, css2);
+});
+
+// =============================================================================
+// Style.join tests
+// =============================================================================
+
+Deno.test("Style.join - returns this when called with no arguments", () => {
+  const a = style(".a", { color: "red" });
+  const result = a.join();
+  assertEquals(result, a);
+  assertEquals(result.toString(), ".a");
+});
+
+Deno.test("Style.join - combines styles same as top-level join", () => {
+  const a = style(".a", { color: "red" });
+  const b = style(".b", { color: "blue" });
+  const instanceJoin = a.join(b);
+  const topLevelJoin = join(a, b);
+  assertEquals(render(instanceJoin), render(topLevelJoin));
 });

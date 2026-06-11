@@ -10,6 +10,34 @@
  */
 
 /**
+ * Symbol key for storing the theme's hash identifier.
+ * @internal
+ * @since 0.0.8
+ */
+export const ThemeHash = Symbol("@baetheus/css/theme/hash");
+
+/**
+ * Symbol key for storing the theme's original shape values.
+ * @internal
+ * @since 0.0.8
+ */
+export const ThemeValues = Symbol("@baetheus/css/theme/values");
+
+/**
+ * Symbol key for storing the theme's flattened CSS variables.
+ * @internal
+ * @since 0.0.8
+ */
+export const ThemeVariables = Symbol("@baetheus/css/theme/variables");
+
+/**
+ * Symbol key for storing the theme's var() reference mappings.
+ * @internal
+ * @since 0.0.8
+ */
+export const ThemeReferences = Symbol("@baetheus/css/theme/references");
+
+/**
  * A CSS value that can be either a string or number.
  *
  * @example

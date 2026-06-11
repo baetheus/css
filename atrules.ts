@@ -11,7 +11,7 @@
  */
 
 import type { Properties } from "csstype";
-import { type Style, style } from "./style.ts";
+import { type Style, style, type StyleInput } from "./style.ts";
 
 /**
  * A quoted string value (single or double quotes).
@@ -1042,39 +1042,39 @@ function extractAtRuleKeyword(rule: string): string {
  */
 function keyframesToStyleInput(
   properties: KeyframeBlockProperties,
-): Parameters<typeof style>[1] {
-  const select: Record<string, Record<string, string>> = {};
+): StyleInput {
+  const result: Record<string, Record<string, string>> = {};
   for (const [offset, props] of Object.entries(properties)) {
     if (props) {
       const stringProps: Record<string, string> = {};
       for (const [key, value] of Object.entries(props)) {
         stringProps[key] = String(value);
       }
-      select[offset] = stringProps;
+      result[offset] = stringProps;
     }
   }
-  return { select } as Parameters<typeof style>[1];
+  return result as unknown as StyleInput;
 }
 
 /**
  * Converts font feature values block properties to style input with nested selectors.
  *
  * @param properties - Font feature sub-rule to values mapping
- * @returns StyleInput with select property for nested rendering
+ * @returns Record with nested selectors for rendering
  *
  * @internal
  * @since 0.0.8
  */
 function fontFeatureValuesToStyleInput(
   properties: FontFeatureValuesBlockProperties,
-): Parameters<typeof style>[1] {
-  const select: Record<string, Record<string, string>> = {};
+): StyleInput {
+  const result: Record<string, Record<string, string>> = {};
   for (const [subRule, values] of Object.entries(properties)) {
     if (values) {
-      select[subRule] = values;
+      result[subRule] = values;
     }
   }
-  return { select } as Parameters<typeof style>[1];
+  return result as unknown as StyleInput;
 }
 
 /**
@@ -1155,25 +1155,27 @@ export function at<T extends FlatAtRule>(
   // Handle @keyframes rules - convert to nested selector format
   if (keyword === "@keyframes" || keyword === "@-webkit-keyframes") {
     return style(
-      rule,
-      keyframesToStyleInput(properties as KeyframeBlockProperties),
+      rule as string,
+      keyframesToStyleInput(
+        properties as KeyframeBlockProperties,
+      ) as StyleInput,
     );
   }
 
   // Handle @font-feature-values rules - convert to nested selector format
   if (keyword === "@font-feature-values") {
     return style(
-      rule,
+      rule as string,
       fontFeatureValuesToStyleInput(
         properties as FontFeatureValuesBlockProperties,
-      ),
+      ) as StyleInput,
     );
   }
 
   // Cast needed because at-rule selectors and descriptor properties
   // don't match the standard Selector/StyleInput types
   return style(
-    rule,
-    properties as Parameters<typeof style>[1],
+    rule as string,
+    properties as StyleInput,
   );
 }

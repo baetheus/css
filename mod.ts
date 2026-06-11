@@ -2,7 +2,7 @@
  * Type-safe CSS-in-TypeScript library with automatic class generation.
  *
  * This library provides utilities for creating CSS styles with full type safety,
- * automatic class name generation, nested selectors, CSS variables with contracts,
+ * automatic class name generation, nested selectors, CSS variables with themes,
  * and at-rule support.
  *
  * @example Basic styles
@@ -62,39 +62,38 @@
  * console.log(render(combined));
  * ```
  *
- * @example CSS variable contracts
+ * @example CSS variable themes
  * ```ts
- * import { contract, vars, style, join, render } from "@baetheus/css";
+ * import { theme, style, render, fallback } from "@baetheus/css";
  *
- * // Define a type-safe variable contract
- * const theme = contract({
- *   colors: {
- *     primary: null,
- *     background: null,
- *   },
+ * // Define a type-safe theme with values
+ * const colors = theme({
+ *   primary: "blue",
+ *   background: "white",
  *   spacing: {
- *     small: null,
- *     medium: null,
+ *     small: "4px",
+ *     medium: "16px",
  *   },
  * });
  *
- * // Use contract references in styles (type-checked)
+ * // Use theme references in styles (type-checked)
  * const card = style({
- *   backgroundColor: theme.colors.background,
- *   padding: theme.spacing.medium,
- *   color: theme.colors.primary,
+ *   backgroundColor: colors.background,
+ *   padding: colors.spacing.medium,
+ *   color: colors.primary,
+ *   // Use fallback() to add fallback values
+ *   borderColor: fallback(colors.primary, "gray"),
  * });
  *
- * // Create theme implementations with any selector
- * const lightTheme = style(":root", vars(theme, {
- *   colors: { primary: "#0066cc", background: "#ffffff" },
- *   spacing: { small: "4px", medium: "16px" },
- * }));
+ * // Create CSS custom properties by passing theme to style()
+ * const lightTheme = style(":root", colors);
  *
- * const darkTheme = style(".dark", vars(theme, {
- *   colors: { primary: "#66b3ff", background: "#1a1a1a" },
- *   spacing: { small: "4px", medium: "16px" },
- * }));
+ * // Create a dark variant with same variable names using create()
+ * const darkColors = colors.create({
+ *   primary: "lightblue",
+ *   background: "#1a1a1a",
+ * });
+ * const darkTheme = style(".dark", darkColors);
  *
  * // Use join() or Style.join() method to combine styles for rendering
  * console.log(render(lightTheme.join(darkTheme, card)));
@@ -102,7 +101,7 @@
  *
  * @example At-rules (font-face, keyframes, etc.)
  * ```ts
- * import { at, join, render } from "@baetheus/css";
+ * import { at, render } from "@baetheus/css";
  *
  * const roboto = at("@font-face", {
  *   fontFamily: "Roboto",
@@ -136,7 +135,15 @@
  */
 
 export type { RenderOptions, Style, StyleBlock } from "./style.ts";
-export type { Contract, ShapeOf, VarsOf } from "./variables.ts";
+export type {
+  DeepPartial,
+  MapShape,
+  Theme,
+  ThemeShape,
+  VariableKey,
+  Variables,
+  VariableValue,
+} from "./theme.ts";
 export type { CSSAtRule } from "./atrules.ts";
 
 export {
@@ -149,5 +156,5 @@ export {
   style,
   use,
 } from "./style.ts";
-export { contract, isContract, vars } from "./variables.ts";
+export { fallback, isTheme, theme } from "./theme.ts";
 export { at } from "./atrules.ts";

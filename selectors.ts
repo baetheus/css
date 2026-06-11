@@ -221,7 +221,23 @@ export type PseudoClassSimple =
   // Misc
   | ":defined" | ":scope";
 
-/** Functional pseudo-classes (require arguments) */
+/**
+ * Functional pseudo-classes that require arguments.
+ *
+ * These pseudo-classes take parameters in parentheses, such as
+ * `:nth-child(2n+1)` or `:not(.hidden)`.
+ *
+ * @example
+ * ```ts
+ * import type { PseudoClassFunctional } from "./selectors.ts";
+ *
+ * const nthChild: PseudoClassFunctional = ":nth-child(2n+1)";
+ * const hasChild: PseudoClassFunctional = ":has(.active)";
+ * const notHidden: PseudoClassFunctional = ":not(.hidden)";
+ * ```
+ *
+ * @since 0.0.4
+ */
 // deno-fmt-ignore
 export type PseudoClassFunctional =
   | `:dir(${"ltr" | "rtl"})`
@@ -256,7 +272,23 @@ export type PseudoClassFunctional =
  */
 export type PseudoClass = PseudoClassSimple | PseudoClassFunctional;
 
-/** Double-colon canonical forms + legacy single-colon aliases */
+/**
+ * CSS pseudo-elements for targeting specific parts of elements.
+ *
+ * Uses the double-colon (::) canonical syntax. These pseudo-elements
+ * target generated content or specific portions of an element.
+ *
+ * @example
+ * ```ts
+ * import type { PseudoElement } from "./selectors.ts";
+ *
+ * const before: PseudoElement = "::before";
+ * const after: PseudoElement = "::after";
+ * const firstLetter: PseudoElement = "::first-letter";
+ * ```
+ *
+ * @since 0.0.4
+ */
 export type PseudoElement =
   | "::after"
   | "::before"
@@ -308,7 +340,5 @@ export type RawSelector =
  *
  * @since 0.0.4
  */
-export type Selector =
-  | RawSelector
-  // deno-lint-ignore ban-types
-  | (string & {});
+// deno-lint-ignore ban-types
+export type Selector = RawSelector | (string & {});

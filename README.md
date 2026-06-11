@@ -78,49 +78,44 @@ console.log(render(body.join(header)));
 ### CSS Variables / Theming
 
 ```ts
-import { contract, render, style, vars } from "@baetheus/css";
+import { fallback, render, style, theme } from "@baetheus/css";
 
-// Define the contract with arbitrary nesting (null marks each variable)
-const theme = contract({
+// Define a theme with values (nested structure becomes CSS variables)
+const colors = theme({
   colors: {
-    primary: null,
-    secondary: null,
-    brand: { light: null, dark: null },
+    primary: "blue",
+    secondary: "green",
+    brand: { light: "#eef", dark: "#335" },
   },
-  spacing: null,
+  spacing: "8px",
 });
 
-// Use var references in styles
+// Use var references in styles (type-checked)
 const card = style({
-  color: theme.colors.primary,
-  backgroundColor: theme.colors.brand.light,
-  padding: theme.spacing,
+  color: colors.colors.primary,
+  backgroundColor: colors.colors.brand.light,
+  padding: colors.spacing,
 });
 
-// Create theme implementations with any selector
-const lightTheme = style(
-  ":root",
-  vars(theme, {
-    colors: {
-      primary: "blue",
-      secondary: "green",
-      brand: { light: "#eef", dark: "#335" },
-    },
-    spacing: "8px",
-  }),
-);
+// Use fallback() to add fallback values to variable references
+const button = style({
+  color: colors.colors.primary,
+  // If --hash-colors-secondary is undefined, falls back to "gray"
+  borderColor: fallback(colors.colors.secondary, "gray"),
+});
 
-const darkTheme = style(
-  ".dark",
-  vars(theme, {
-    colors: {
-      primary: "white",
-      secondary: "#ccc",
-      brand: { light: "#335", dark: "#eef" },
-    },
-    spacing: "8px",
-  }),
-);
+// Create CSS custom properties by passing theme to style()
+const lightTheme = style(":root", colors);
+
+// Create a dark variant with same variable names using create()
+const darkColors = colors.create({
+  colors: {
+    primary: "white",
+    secondary: "#ccc",
+    brand: { light: "#335", dark: "#eef" },
+  },
+});
+const darkTheme = style(".dark", darkColors);
 
 // Apply theme by adding .dark class to switch themes
 // Use join() or Style.join() to combine styles for rendering
@@ -235,12 +230,14 @@ The `Style` class is iterable and has the following methods:
 - `join(...styles)` - Combines this style with others into a single Style for
   rendering
 
-### Variables
+### Theming
 
-- `contract(shape)` - Creates a type-safe CSS variable contract
-- `vars(contract, values)` - Creates CSS custom properties from a contract
-  (returns Variables to inject into a Style)
-- `isContract(value)` - Type guard for Contract objects
+- `theme(values)` - Creates a type-safe CSS variable theme with var() references
+- `Theme.create(partial)` - Instance method that creates a variant with merged
+  values (same variable names)
+- `fallback(ref, ...values)` - Adds fallback values to a CSS variable reference
+- `isTheme(value)` - Type guard for Theme objects
+- Pass a theme directly to `style()` to generate CSS custom properties
 
 ### At-Rules
 
