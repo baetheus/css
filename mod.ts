@@ -134,23 +134,8 @@
  * @since 0.0.4
  */
 
-export type {
-  HasStyles,
-  RenderOptions,
-  Style,
-  StyleBlock,
-  Variant,
-  VariantShape,
-} from "./style.ts";
-export type {
-  DeepPartial,
-  MapShape,
-  Theme,
-  ThemeShape,
-  VariableKey,
-  Variables,
-  VariableValue,
-} from "./theme.ts";
+export type { HasStyles, RenderOptions, Style, Variant } from "./style.ts";
+export type { Theme, Variables } from "./theme.ts";
 export type { CSSAtRule } from "./atrules.ts";
 
 export {
